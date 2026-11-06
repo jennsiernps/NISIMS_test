@@ -1,11 +1,11 @@
-#### Hi Erik, I have made an edit to this code.
 #----------------------------------------------------------------------------------------------------------------------
 # Name: NISIMS_QC_Upload.py
 # Purpose: This script was created to automate the uploading of the NPS NISIMS QC geodatabase. It was created to be
 # used by the Data Manager for the EPMT program.
 # Author: Jennifer Sieracki
 # Created: 2015-08-03 12:58
-# Updated: 2026-09-04 14:42 -- Fixes1
+####
+# Updated: 2026-11
 #----------------------------------------------------------------------------------------------------------------------
 
 # Import modules
@@ -105,6 +105,9 @@ def main():
         # Set memory as workspace
         arcpy.env.workspace = "memory"
 
+		# Create a list to hold the final feature classes that will be uploaded
+		upload_list = []
+
         # Check for Survey data
         for fc in arcpy.ListFeatureClasses("WeedSurveyData"):
             arcpy.AddMessage("Processing weed survey data.")
@@ -112,20 +115,7 @@ def main():
             arcpy.AddMessage("Weed Survey Input Count: " + str(survin))
             arcpy.CopyFeatures_management("WeedSurveyData", "WeedSurveyData_fc")
             arcpy.AddField_management("WeedSurveyData_fc", "UPLOAD_DT", "DATE")
-            arcpy.CalculateField_management("WeedSurveyData_fc", "UPLOAD_DT", "add_date()", "PYTHON_9.3", today_cb)          
-            wslfm = arcpy.FieldMappings()
-            wslfm.addTable(SDEgdb + "\\dbo.WeedSurveyLocation")
-            survbef = arcpy.GetCount_management(SDEgdb + "\\dbo.WeedSurveyLocation").getOutput(0)
-            arcpy.Append_management("%workspace%\\WeedSurveyData_fc", SDEgdb + "\\dbo.WeedSurveyLocation", "NO_TEST", wslfm)
-            survaft = arcpy.GetCount_management(SDEgdb + "\\dbo.WeedSurveyLocation").getOutput(0)
-            survdif = int(survaft) - int(survbef)
-            arcpy.AddMessage(str(survdif) + " records added to WeedSurveyLocation")
-
-
-            # Split out SCNTFC_CD fields
-            sppcnt = calculate_and_count("WeedSurveyData", "_spp", "SCNTFC_CD", "spp_")     
-            if int(sppcnt) > 0:
-                add_records("Survey Species", "WeedSurveyData_sppsel", ["SURV_GUID", "SCNTFC_CD"], "spp_all", "WEEDSURVEYSPECIES")
+            arcpy.CalculateField_management("WeedSurveyData_fc", "UPLOAD_DT", "add_date()", "PYTHON_9.3", today_cb)
 
         # Check for Infestation data
         for fc in arcpy.ListFeatureClasses("WeedInfestationData"):
@@ -202,16 +192,6 @@ def main():
             arcpy.AddField_management("WeedInfestationData_fc", "UPLOAD_DT", "DATE")
             arcpy.CalculateField_management("WeedInfestationData_fc", "UPLOAD_DT", "add_date()", "PYTHON_9.3", today_cb)
 
-            # Append Infestation Data
-            wilfm = arcpy.FieldMappings()
-            wilfm.addTable(SDEgdb + "\\dbo.WeedInfestationLocation")
-            infbef = arcpy.GetCount_management(SDEgdb + "\\dbo.WeedInfestationLocation").getOutput(0)
-            arcpy.Append_management("WeedInfestationData_fc", SDEgdb + "\\dbo.WeedInfestationLocation", "NO_TEST", wilfm)
-            infaft = arcpy.GetCount_management(SDEgdb + "\\dbo.WeedInfestationLocation").getOutput(0)
-            infdif = int(infaft) - int(infbef)
-            arcpy.AddMessage(str(infdif) + " records added to WeedInfestationLocation")
-                
-
             # Split out LU_CTGY_NM fields
             arcpy.CopyFeatures_management("WeedInfestationData", "WeedInfestationData_lu")
             LuNum = 1
@@ -226,16 +206,7 @@ def main():
             arcpy.Append_management(lufld, "WeedInfestationData_copy", "NO_TEST")
             arcpy.Select_analysis("WeedInfestationData_copy", "WeedInfestationData_copy2", "\"LU_CTGY_NM\" IS NOT NULL")
             arcpy.CopyRows_management("WeedInfestationData_copy2", "lutb_all")
-            influin = arcpy.GetCount_management("lutb_all").getOutput(0)
-            arcpy.AddMessage("Weed Infestation Land Use Input Count: " + str(influin))
-            wichfm = arcpy.FieldMappings()
-            wichfm.addTable(SDEgdb + "\\dbo.ASSOCIATEDCHARACTERISTIC")
-            influbef = arcpy.GetCount_management(SDEgdb + "\\dbo.ASSOCIATEDCHARACTERISTIC").getOutput(0)
-            arcpy.Append_management("lutb_all", SDEgdb + "\\dbo.ASSOCIATEDCHARACTERISTIC", "NO_TEST", wichfm)
-            influaft = arcpy.GetCount_management(SDEgdb + "\\dbo.ASSOCIATEDCHARACTERISTIC").getOutput(0)
-            infludif = int(influaft) - int(influbef)
-            arcpy.AddMessage(str(infludif) + " records added to ASSOCIATEDCHARACTERISTIC")
-
+            
         # Check for proposed biological data
         for fc in arcpy.ListFeatureClasses("ProposedBiologicalData"):
             arcpy.AddMessage("Processing proposed biological data.")
@@ -244,18 +215,6 @@ def main():
             arcpy.AddMessage("Proposed Biological Data Input Count: " + str(propbioin))
             arcpy.AddField_management("ProposedBiologicalData_fc", "UPLOAD_DT", "DATE")
             arcpy.CalculateField_management("ProposedBiologicalData_fc", "UPLOAD_DT", "add_date()", "PYTHON_9.3", today_cb)
-            pbtfm = arcpy.FieldMappings()
-            pbtfm.addTable(SDEgdb + "\\dbo.ProposedTreatmentLocation")
-            propbiobef = arcpy.GetCount_management(SDEgdb + "\\dbo.ProposedTreatmentLocation").getOutput(0)
-            arcpy.Append_management("ProposedBiologicalData_fc", SDEgdb + "\\dbo.ProposedTreatmentLocation", "NO_TEST", pbtfm)
-            propbioaft = arcpy.GetCount_management(SDEgdb + "\\dbo.ProposedTreatmentLocation").getOutput(0)
-            propbiodif = int(propbioaft) - int(propbiobef)
-            arcpy.AddMessage(str(propbiodif) + " records added to ProposedTreatmentLocation")
-
-            # Split out SCNTFC_CD fields
-            sppcnt = calculate_and_count("ProposedBiologicalData", "_spp", "SCNTFC_CD", "pbiotb2_")
-            if int(sppcnt) > 0:
-                add_records("Proposed Biological Species", "ProposedBiologicalData_sppsel", ["SCNTFC_CD", "PROP_TRT_GUID"], "pbiotb_all", "PROPOSALSPECIES")
 
             # Split out BIO_SCNTFC_CD fields
             arcpy.CopyFeatures_management("ProposedBiologicalData", "ProposedBiologicalData_biospp")
@@ -284,21 +243,9 @@ def main():
                     BioPmt = str("PRMT_NR" + BioNum)
                     arcpy.CalculateField_management("pbiotb4_" + str(BsppNum), "PRMT_NR", "!" + BioPmt + "!", "PYTHON_9.3")
                     BsppNum += 1
-            bsppfld = arcpy.ListFeatureClasses("pbiotb4_*")
-            arcpy.Append_management(bsppfld, "ProposedBiologicalData_biospp", "NO_TEST")
-            arcpy.Select_analysis("ProposedBiologicalData_biospp", "ProposedBiologicalData_biosppsel", "\"BIO_SCNTFC_CD\" IS NOT NULL")
-            bsppcnt = arcpy.GetCount_management("ProposedBiologicalData_biosppsel").getOutput(0)
-            if int(bsppcnt) > 0:
-                add_records("Proposed Biological Component", "ProposedBiologicalData_biosppsel", ["BIO_SCNTFC_CD", "PROP_TRT_GUID"], "pbiotb_all", "PROPOSALBIOCOMPONENTAGENT")
-            # Split out COOP_PERS fields
-            coopcnt = calculate_and_count("ProposedBiologicalData", "_coop", "COOP_PERS", "pbiotb6_")
-            if int(coopcnt) > 0:
-                add_records("Proposed Biological Cooperator", "ProposedBiologicalData_coopsel", ["COOP_PERS", "PROP_TRT_GUID"], "pbiotb_all", "PROPOSALCOOPERATOR")
-
-            # Split out NEPA_NR fields
-            nepacnt = calculate_and_count("ProposedBiologicalData", "_nepa", "NEPA_NR", "pbiotb8_")
-            if int(nepacnt) > 0:
-                add_records("Proposed NEPA Component", "ProposedBiologicalData_nepasel", ["NEPA_NR", "PROP_TRT_GUID"], "pbiotb_all", "TREATMENTPROPOSALNUMBERS")
+				bsppfld = arcpy.ListFeatureClasses("pbiotb4_*")
+            	arcpy.Append_management(bsppfld, "ProposedBiologicalData_biospp", "NO_TEST")
+            	arcpy.Select_analysis("ProposedBiologicalData_biospp", "ProposedBiologicalData_biosppsel", "\"BIO_SCNTFC_CD\" IS NOT NULL") 
 
         # Check for proposed chemical data
         for fc in arcpy.ListFeatureClasses("ProposedChemicalData"):
@@ -308,18 +255,6 @@ def main():
             arcpy.AddMessage("Proposed Chemical Data Input Count: " + str(propchemin))
             arcpy.AddField_management("ProposedChemicalData_fc", "UPLOAD_DT", "DATE")
             arcpy.CalculateField_management("ProposedChemicalData_fc", "UPLOAD_DT", "add_date()", "PYTHON_9.3", today_cb)      
-            pctfm = arcpy.FieldMappings()
-            pctfm.addTable(SDEgdb + "\\dbo.ProposedTreatmentLocation")
-            propchembef = arcpy.GetCount_management(SDEgdb + "\\dbo.ProposedTreatmentLocation").getOutput(0)
-            arcpy.Append_management("ProposedChemicalData_fc", SDEgdb + "\\dbo.ProposedTreatmentLocation", "NO_TEST", pctfm)
-            propchemaft = arcpy.GetCount_management(SDEgdb + "\\dbo.ProposedTreatmentLocation").getOutput(0)
-            propchemdif = int(propchemaft) - int(propchembef)
-            arcpy.AddMessage(str(propchemdif) + " records added to ProposedTreatmentLocation")
-
-            # Split out SCNTFC_CD fields
-            sppcnt = calculate_and_count("ProposedChemicalData", "_spp", "SCNTFC_CD", "pchemtb2_")
-            if int(sppcnt) > 0:
-                add_records("Proposed Chemical Species", "ProposedChemicalData_sppsel", ["SCNTFC_CD", "PROP_TRT_GUID"], "pchemtb_all", "PROPOSALSPECIES")
 
             # Split out TRADE_NM fields
             arcpy.CopyFeatures_management("ProposedChemicalData", "ProposedChemicalData_chemag")
@@ -351,18 +286,7 @@ def main():
             Cagfld = arcpy.ListFeatureClasses("pchemtb4_*")
             arcpy.Append_management(Cagfld, "ProposedChemicalData_chemag", "NO_TEST")
             arcpy.Select_analysis("ProposedChemicalData_chemag", "ProposedChemicalData_chemagsel", "\"TRADE_NM\" IS NOT NULL")
-            bsppcnt = arcpy.GetCount_management("ProposedChemicalData_chemagsel").getOutput(0)
-            if int(bsppcnt) > 0:
-                add_records("Proposed Chemical Component", "ProposedChemicalData_chemagsel", ["TRADE_NM", "PROP_TRT_GUID"], "pchemtb_all", "PROPOSALCHEMCOMPONENTAGENT")
 
-            # Split out COOP_PERS fields
-            coopcnt = calculate_and_count("ProposedChemicalData", "_coop", "COOP_PERS", "pchemtb6_")
-            if int(coopcnt) > 0:
-                add_records("Proposed Chemical Cooperator", "ProposedChemicalData_coopsel", ["COOP_PERS", "PROP_TRT_GUID"], "pchemtb_all", "PROPOSALCOOPERATOR")
-            # Split out NEPA_NR fields
-            nepacnt = calculate_and_count("ProposedChemicalData", "_nepa", "NEPA_NR", "pchemtb8_")
-            if int(nepacnt) > 0:
-                add_records("Proposed Chemical NEPA", "ProposedChemicalData_nepasel", ["NEPA_NR", "PROP_TRT_GUID"], "pchemtb_all", "TREATMENTPROPOSALNUMBERS")
         # Check for proposed other data
         for fc in arcpy.ListFeatureClasses("ProposedOtherData"):
             arcpy.AddMessage("Processing proposed other data.")
@@ -371,26 +295,7 @@ def main():
             arcpy.AddMessage("Proposed Other Data Input Count: " + str(propothin))
             arcpy.AddField_management("ProposedOtherData_fc", "UPLOAD_DT", "DATE")
             arcpy.CalculateField_management("ProposedOtherData_fc", "UPLOAD_DT", "add_date()", "PYTHON_9.3", today_cb)         
-            pctfm = arcpy.FieldMappings()
-            pctfm.addTable(SDEgdb + "\\dbo.ProposedTreatmentLocation")
-            propothbef = arcpy.GetCount_management(SDEgdb + "\\dbo.ProposedTreatmentLocation").getOutput(0)
-            arcpy.Append_management("ProposedOtherData_fc", SDEgdb + "\\dbo.ProposedTreatmentLocation", "NO_TEST", pctfm)
-            propothaft = arcpy.GetCount_management(SDEgdb + "\\dbo.ProposedTreatmentLocation").getOutput(0)
-            propothdif = int(propothaft) - int(propothbef)
-            arcpy.AddMessage(str(propothdif) + " records added to ProposedTreatmentLocation")
 
-            # Split out SCNTFC_CD fields
-            sppcnt = calculate_and_count("ProposedOtherData", "_spp", "SCNTFC_CD", "pothtb2_")
-            if int(sppcnt) > 0:
-                add_records("Proposed Other Species", "ProposedOtherData_sppsel", ["SCNTFC_CD", "PROP_TRT_GUID"], "pothtb_all", "PROPOSALSPECIES")
-            # Split out COOP_PERS fields
-            coopcnt = calculate_and_count("ProposedOtherData", "_coop", "COOP_PERS", "pothtb6_")
-            if int(coopcnt) > 0:
-                add_records("Proposed Other Cooperator", "ProposedOtherData_coopsel", ["COOP_PERS", "PROP_TRT_GUID"], "pothtb_all", "PROPOSALCOOPERATOR")
-            # Split out NEPA_NR fields
-            nepacnt = calculate_and_count("ProposedOtherData", "_nepa", "NEPA_NR", "pothtb8_")
-            if int(nepacnt) > 0:
-                add_records("Proposed Other NEPA", "ProposedOtherData_nepasel", ["NEPA_NR", "PROP_TRT_GUID"], "pothtb_all", "TREATMENTPROPOSALNUMBERS")
         # Check for biological treatment data
         for fc in arcpy.ListFeatureClasses("BiologicalTreatmentData"):
             arcpy.AddMessage("Processing biological data.")
@@ -822,7 +727,66 @@ def main():
                 photaft = arcpy.GetCount_management(SDEgdb + "\\dbo.PHOTOS").getOutput(0)
                 photdif = int(photaft) - int(photbef)
                 arcpy.AddMessage(str(photdif) + " records added to PHOTOS")
-            
+				
+		#### Complete the final upload to the SDE
+	    for fc in arcpy.ListFeatureClasses("WeedSurveyData_fc"):
+			wslfm = arcpy.FieldMappings()
+            wslfm.addTable(SDEgdb + "\\dbo.WeedSurveyLocation")
+            survbef = arcpy.GetCount_management(SDEgdb + "\\dbo.WeedSurveyLocation").getOutput(0)
+            arcpy.Append_management("%workspace%\\WeedSurveyData_fc", SDEgdb + "\\dbo.WeedSurveyLocation", "NO_TEST", wslfm)
+            survaft = arcpy.GetCount_management(SDEgdb + "\\dbo.WeedSurveyLocation").getOutput(0)
+            survdif = int(survaft) - int(survbef)
+            arcpy.AddMessage(str(survdif) + " records added to WeedSurveyLocation")
+            sppcnt = calculate_and_count("WeedSurveyData", "_spp", "SCNTFC_CD", "spp_")     
+            if int(sppcnt) > 0:
+                add_records("Survey Species", "WeedSurveyData_sppsel", ["SURV_GUID", "SCNTFC_CD"], "spp_all", "WEEDSURVEYSPECIES")
+				
+		for fc in arcpy.ListFeatureClasses("WeedInfestationData_fc"):
+            wilfm = arcpy.FieldMappings()
+            wilfm.addTable(SDEgdb + "\\dbo.WeedInfestationLocation")
+            infbef = arcpy.GetCount_management(SDEgdb + "\\dbo.WeedInfestationLocation").getOutput(0)
+            arcpy.Append_management("WeedInfestationData_fc", SDEgdb + "\\dbo.WeedInfestationLocation", "NO_TEST", wilfm)
+            infaft = arcpy.GetCount_management(SDEgdb + "\\dbo.WeedInfestationLocation").getOutput(0)
+            infdif = int(infaft) - int(infbef)
+            arcpy.AddMessage(str(infdif) + " records added to WeedInfestationLocation")
+			influin = arcpy.GetCount_management("lutb_all").getOutput(0)
+            arcpy.AddMessage("Weed Infestation Land Use Input Count: " + str(influin))
+            wichfm = arcpy.FieldMappings()
+            wichfm.addTable(SDEgdb + "\\dbo.ASSOCIATEDCHARACTERISTIC")
+            influbef = arcpy.GetCount_management(SDEgdb + "\\dbo.ASSOCIATEDCHARACTERISTIC").getOutput(0)
+            arcpy.Append_management("lutb_all", SDEgdb + "\\dbo.ASSOCIATEDCHARACTERISTIC", "NO_TEST", wichfm)
+            influaft = arcpy.GetCount_management(SDEgdb + "\\dbo.ASSOCIATEDCHARACTERISTIC").getOutput(0)
+            infludif = int(influaft) - int(influbef)
+            arcpy.AddMessage(str(infludif) + " records added to ASSOCIATEDCHARACTERISTIC")
+
+		for fc in arcpy.ListFeatureClasses("Proposed*Data"):
+			pbtfm = arcpy.FieldMappings()
+            pbtfm.addTable(SDEgdb + "\\dbo.ProposedTreatmentLocation")
+            propbiobef = arcpy.GetCount_management(SDEgdb + "\\dbo.ProposedTreatmentLocation").getOutput(0)
+            arcpy.Append_management(fc +"_fc", SDEgdb + "\\dbo.ProposedTreatmentLocation", "NO_TEST", pbtfm)
+            propaft = arcpy.GetCount_management(SDEgdb + "\\dbo.ProposedTreatmentLocation").getOutput(0)
+            propdif = int(propaft) - int(propbef)
+            arcpy.AddMessage(str(propdif) + " records added to ProposedTreatmentLocation")
+            sppcnt = calculate_and_count(fc, "_spp", "SCNTFC_CD", fc + "_allspp")
+            if int(sppcnt) > 0:
+                add_records("Proposed Species", fc + "_sppsel", ["SCNTFC_CD", "PROP_TRT_GUID"], fc + "_allspp", "PROPOSALSPECIES")
+            coopcnt = calculate_and_count(fc, "_coop", "COOP_PERS", fc + "_allcoop")
+            if int(coopcnt) > 0:
+                add_records("Proposed Cooperator", fc + "_coopsel", ["COOP_PERS", "PROP_TRT_GUID"], fc + "_allcoop", "PROPOSALCOOPERATOR")
+            nepacnt = calculate_and_count(fc, "_nepa", "NEPA_NR", fc + "_allnepa")
+            if int(nepacnt) > 0:
+                add_records("Proposed NEPA Component", fc + "_nepasel", ["NEPA_NR", "PROP_TRT_GUID"], fc + "_allnepa", "TREATMENTPROPOSALNUMBERS")
+			if fc == ("ProposedBiologicalData"):
+            	bsppcnt = arcpy.GetCount_management("ProposedBiologicalData_biosppsel").getOutput(0)
+            	if int(bsppcnt) > 0:
+                	add_records("Proposed Biological Component", "ProposedBiologicalData_biosppsel", ["BIO_SCNTFC_CD", "PROP_TRT_GUID"], "pbiotb_all", "PROPOSALBIOCOMPONENTAGENT")
+			if fc == ("ProposedChemicalData"):
+				bsppcnt = arcpy.GetCount_management("ProposedChemicalData_chemagsel").getOutput(0)
+            	if int(bsppcnt) > 0:
+                	add_records("Proposed Chemical Component", "ProposedChemicalData_chemagsel", ["TRADE_NM", "PROP_TRT_GUID"], "pchemtb_all", "PROPOSALCHEMCOMPONENTAGENT")				
+
+	
+			
     # except Exception as e:
 
     #     tb = sys.exc_info()[2]
