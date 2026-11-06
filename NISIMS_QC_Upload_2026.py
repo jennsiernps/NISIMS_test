@@ -303,14 +303,7 @@ def main():
             bioin = arcpy.GetCount_management("BiologicalTreatmentData_fc").getOutput(0)
             arcpy.AddMessage("Biological Treatment Data Input Count: " + str(bioin))
             arcpy.AddField_management("BiologicalTreatmentData_fc", "UPLOAD_DT", "DATE")
-            arcpy.CalculateField_management("BiologicalTreatmentData_fc", "UPLOAD_DT", "add_date()", "PYTHON_9.3", today_cb) 
-            biofm = arcpy.FieldMappings()
-            biofm.addTable(SDEgdb + "\\dbo.TreatmentComponentLocation")
-            biobef = arcpy.GetCount_management(SDEgdb + "\\dbo.TreatmentComponentLocation").getOutput(0)
-            arcpy.Append_management("BiologicalTreatmentData_fc", SDEgdb + "\\dbo.TreatmentComponentLocation", "NO_TEST", biofm)        
-            bioaft = arcpy.GetCount_management(SDEgdb + "\\dbo.TreatmentComponentLocation").getOutput(0)
-            biodif = int(bioaft) - int(biobef)
-            arcpy.AddMessage(str(biodif) + " records added to TreatmentComponentLocation")
+            arcpy.CalculateField_management("BiologicalTreatmentData_fc", "UPLOAD_DT", "add_date()", "PYTHON_9.3", today_cb)   
             
             # Merge to BIOLOGICALCOMPONENT
             arcpy.CopyFeatures_management("BiologicalTreatmentData_fc", "BiologicalTreatmentData_biocomp")
@@ -321,8 +314,8 @@ def main():
                 arcpy.CalculateField_management("BiologicalTreatmentData_biocomp", "tot_est_cvr_rt", "cvrac(!tot_est_cvr_rt!,!temp_fld!)", "PYTHON_9.3", totaccalc)
             arcpy.DeleteField_management("BiologicalTreatmentData_biocomp", "tempfld")
             arcpy.CalculateField_management("BiologicalTreatmentData_biocomp", "CVRAREA_ME", "!CLCACRE_ME! * !tot_est_cvr_rt! / 100", "PYTHON_9.3")
-            add_records("Biological Component", "BiologicalTreatmentData_biocomp", ["BIO_SCNTFC_CD", "TRT_GUID"], "biotb_all", "BIOLOGICALCOMPONENT")        
-            # Split out SCNTFC_CD fields
+
+			# Split out SCNTFC_CD fields
             arcpy.CopyFeatures_management("BiologicalTreatmentData", "BiologicalTreatmentData_spp")
             SppNum = 1
             for field in arcpy.ListFields("BiologicalTreatmentData_spp", "SCNTFC_CD*"):
@@ -337,13 +330,9 @@ def main():
                     SppNum += 1
             sppfld = arcpy.ListFeatureClasses("biotbspp_*")
             arcpy.Append_management(sppfld, "BiologicalTreatmentData_spp", "NO_TEST")
-            arcpy.Select_analysis("BiologicalTreatmentData_spp", "BiologicalTreatmentData_sppsel", "\"SCNTFC_CD\" IS NOT NULL")
-            sppcnt = arcpy.GetCount_management("BiologicalTreatmentData_sppsel").getOutput(0)
-            if int(sppcnt) > 0:
-                arcpy.AddField_management("BiologicalTreatmentData_sppsel", "cvrrttx", "TEXT", "", "", 20)
-                arcpy.CalculateField_management("BiologicalTreatmentData_sppsel", "cvrrttx", "!EST_CVR_RT!", "PYTHON_9.3")
-                add_records("Biological Species", "BiologicalTreatmentData_sppsel", ["SCNTFC_CD", "cvrrttx", "TRT_GUID"], "biotb_all", "TREATMENTSPECIES")           
-        # Check for chemical treatment data
+            arcpy.Select_analysis("BiologicalTreatmentData_spp", "BiologicalTreatmentData_sppsel", "\"SCNTFC_CD\" IS NOT NULL")         
+
+		# Check for chemical treatment data
         for fc in arcpy.ListFeatureClasses("ChemicalTreatmentData"):
             arcpy.AddMessage("Processing chemical data.")   
             arcpy.CopyFeatures_management("ChemicalTreatmentData", "ChemicalTreatmentData_fc")
@@ -351,13 +340,6 @@ def main():
             arcpy.AddMessage("Chemical Data Input Count: " + str(chemin))
             arcpy.AddField_management("ChemicalTreatmentData_fc", "UPLOAD_DT", "DATE")
             arcpy.CalculateField_management("ChemicalTreatmentData_fc", "UPLOAD_DT", "add_date()", "PYTHON_9.3", today_cb)
-            chemfm = arcpy.FieldMappings()
-            chemfm.addTable(SDEgdb + "\\dbo.TreatmentComponentLocation")
-            chembef = arcpy.GetCount_management(SDEgdb + "\\dbo.TreatmentComponentLocation").getOutput(0)
-            arcpy.Append_management("ChemicalTreatmentData_fc", SDEgdb + "\\dbo.TreatmentComponentLocation", "NO_TEST", chemfm)
-            chemaft = arcpy.GetCount_management(SDEgdb + "\\dbo.TreatmentComponentLocation").getOutput(0)
-            chemdif = int(chemaft) - int(chembef)
-            arcpy.AddMessage(str(chemdif) + " records added to TreatmentComponentLocation")
             
             # Merge to CHEMICALCOMPONENT
             arcpy.CopyFeatures_management("ChemicalTreatmentData_fc", "ChemicalTreatmentData_chemcomp")
@@ -368,7 +350,7 @@ def main():
                 arcpy.CalculateField_management("ChemicalTreatmentData_chemcomp", "tot_est_cvr_rt", "cvrac(!tot_est_cvr_rt!,!temp_fld!)", "PYTHON_9.3", totaccalc)
             arcpy.DeleteField_management("ChemicalTreatmentData_chemcomp", "tempfld")
             arcpy.CalculateField_management("ChemicalTreatmentData_chemcomp", "ESTACRE_ME", "!CLCACRE_ME! * !tot_est_cvr_rt! / 100", "PYTHON_9.3")
-            add_records("Chemical Component", "ChemicalTreatmentData_chemcomp", ["TRT_GUID"], "chemtb_all", "CHEMICALCOMPONENT")        
+        
             # Split out TRADE_NM fields
             arcpy.CopyFeatures_management("ChemicalTreatmentData", "ChemicalTreatmentData_chemag")
             arcpy.CreateFeatureclass_management("memory", "ChemicalTreatmentData_chemag2", "POLYGON", "ChemicalTreatmentData_chemag", "", "", new_spatialref)
@@ -396,9 +378,7 @@ def main():
             herbfld = arcpy.ListFeatureClasses("chemtb5_*")
             arcpy.Append_management(herbfld, "ChemicalTreatmentData_chemag2", "NO_TEST")
             arcpy.Select_analysis("ChemicalTreatmentData_chemag2", "ChemicalTreatmentData_chemag2sel", "\"TRADE_NM\" IS NOT NULL")
-            herbcnt = arcpy.GetCount_management("ChemicalTreatmentData_chemag2sel").getOutput(0)
-            if int(herbcnt) > 0:
-                add_records("Chemical Agent", "ChemicalTreatmentData_chemag2sel", ["TRADE_NM", "AGT_APP_RT", "APP_UOM_NM", "MNFCTR_NM", "TRT_GUID"], "chemtb_all", "CHEMICALCOMPCONTROLAGENT")            
+                       
             # Split out ADJ_TRADE_NM
             arcpy.CopyFeatures_management("ChemicalTreatmentData", "ChemicalTreatmentData_chemadj")
             arcpy.AddField_management("ChemicalTreatmentData_chemadj", "ACTLUSE_QTY", "DOUBLE")
@@ -425,9 +405,7 @@ def main():
             if adjct > 0:
                 arcpy.Append_management(adjfld, "ChemicalTreatmentData_chemadj2", "NO_TEST")
                 arcpy.Select_analysis("ChemicalTreatmentData_chemadj2", "ChemicalTreatmentData_chemadj2sel", "\"TRADE_NM\" IS NOT NULL")
-                adjcnt = arcpy.GetCount_management("ChemicalTreatmentData_chemadj2sel").getOutput(0)
-                if int(adjcnt) > 0:
-                    add_records("Chemical Adjuvant", "ChemicalTreatmentData_chemadj2sel", ["TRT_GUID", "CONAGT_GUID", "AGT_UOM_NM", "ACTLUSE_QTY", "TRADE_NM", "AGT_APP_RT", "APP_UOM_NM"], "chemtb_all", "ADJUVANTCOMPONENTAGENT")                
+                
             # Split out SCNTFC_CD fields
             arcpy.CopyFeatures_management("ChemicalTreatmentData", "ChemicalTreatmentData_spp")
             SppNum = 1
@@ -444,11 +422,7 @@ def main():
             sppfld = arcpy.ListFeatureClasses("chemtbspp_*")
             arcpy.Append_management(sppfld, "ChemicalTreatmentData_spp", "NO_TEST")
             arcpy.Select_analysis("ChemicalTreatmentData_spp", "ChemicalTreatmentData_sppsel", "\"SCNTFC_CD\" IS NOT NULL")
-            sppcnt = arcpy.GetCount_management("ChemicalTreatmentData_sppsel").getOutput(0)
-            if int(sppcnt) > 0:
-                arcpy.AddField_management("ChemicalTreatmentData_sppsel", "cvrrttx", "TEXT", "", "", 20)
-                arcpy.CalculateField_management("ChemicalTreatmentData_sppsel", "cvrrttx", "!EST_CVR_RT!", "PYTHON_9.3") 
-                add_records("Chemical Species", "ChemicalTreatmentData_sppsel", ["SCNTFC_CD", "cvrrttx", "TRT_GUID"], "chemtb_all", "TREATMENTSPECIES")            
+          
         # Check for fire treatment data
         for fc in arcpy.ListFeatureClasses("FireTreatmentData"):
             arcpy.AddMessage("Processing fire data.")
@@ -457,17 +431,10 @@ def main():
             arcpy.AddMessage("Fire Data Input Count: " + str(firin))
             arcpy.AddField_management("FireTreatmentData_fc", "UPLOAD_DT", "DATE")
             arcpy.CalculateField_management("FireTreatmentData_fc", "UPLOAD_DT", "add_date()", "PYTHON_9.3", today_cb)
-            firefm = arcpy.FieldMappings()
-            firefm.addTable(SDEgdb + "\\dbo.TreatmentComponentLocation")
-            firbef = arcpy.GetCount_management(SDEgdb + "\\dbo.TreatmentComponentLocation").getOutput(0)
-            arcpy.Append_management("FireTreatmentData_fc", SDEgdb + "\\dbo.TreatmentComponentLocation", "NO_TEST", firefm)
-            firaft = arcpy.GetCount_management(SDEgdb + "\\dbo.TreatmentComponentLocation").getOutput(0)
-            firdif = int(firaft) - int(firbef)
-            arcpy.AddMessage(str(firdif) + " records added to TreatmentComponentLocation")
             
             # Merge to FIRECOMPONENT
             arcpy.CopyFeatures_management("FireTreatmentData_fc", "FireTreatmentData_firecomp")
-            add_records("Fire Component", "FireTreatmentData_firecomp", ["INTNSTY_NM", "FUELMDL_TX", "TRT_GUID"], "firetb2", "FIRECOMPONENT")        
+			
             # Split out SCNTFC_CD fields
             arcpy.CopyFeatures_management("FireTreatmentData", "FireTreatmentData_spp")
             SppNum = 1
@@ -484,11 +451,6 @@ def main():
             sppfld = arcpy.ListFeatureClasses("firetbspp_*")
             arcpy.Append_management(sppfld, "FireTreatmentData_spp", "NO_TEST")
             arcpy.Select_analysis("FireTreatmentData_spp", "FireTreatmentData_sppsel", "\"SCNTFC_CD\" IS NOT NULL")
-            sppcnt = arcpy.GetCount_management("FireTreatmentData_sppsel").getOutput(0)
-            if int(sppcnt) > 0:
-                arcpy.AddField_management("FireTreatmentData_sppsel", "cvrrttx", "TEXT", "", "", 20)
-                arcpy.CalculateField_management("FireTreatmentData_sppsel", "cvrrttx", "!EST_CVR_RT!", "PYTHON_9.3")   
-                add_records("Fire Species", "FireTreatmentData_sppsel", ["SCNTFC_CD", "cvrrttx", "TRT_GUID"], "firetb_all", "TREATMENTSPECIES")
                 
         # Check for manual treatment data
         for fc in arcpy.ListFeatureClasses("ManualTreatmentData"):
@@ -498,13 +460,6 @@ def main():
             arcpy.AddMessage("Manual Data Input Count: " + str(manin))
             arcpy.AddField_management("ManualTreatmentData_fc", "UPLOAD_DT", "DATE")
             arcpy.CalculateField_management("ManualTreatmentData_fc", "UPLOAD_DT", "add_date()", "PYTHON_9.3", today_cb)
-            manfm = arcpy.FieldMappings()
-            manfm.addTable(SDEgdb + "\\dbo.TreatmentComponentLocation")
-            manbef = arcpy.GetCount_management(SDEgdb + "\\dbo.TreatmentComponentLocation").getOutput(0)
-            arcpy.Append_management("ManualTreatmentData_fc", SDEgdb + "\\dbo.TreatmentComponentLocation", "NO_TEST", manfm)
-            manaft = arcpy.GetCount_management(SDEgdb + "\\dbo.TreatmentComponentLocation").getOutput(0)
-            mandif = int(manaft) - int(manbef)
-            arcpy.AddMessage(str(mandif) + " records added to TreatmentComponentLocation")
             
             # Merge to MANUALCOMPONENT
             arcpy.CopyFeatures_management("ManualTreatmentData_fc", "ManualTreatmentData_mancomp")        
@@ -515,7 +470,7 @@ def main():
                 arcpy.CalculateField_management("ManualTreatmentData_mancomp", "tot_est_cvr_rt", "cvrac(!tot_est_cvr_rt!,!temp_fld!)", "PYTHON_9.3", totaccalc)
             arcpy.DeleteField_management("ManualTreatmentData_mancomp", "tempfld")
             arcpy.CalculateField_management("ManualTreatmentData_mancomp", "MANLCMP_ME", "!CLCACRE_ME! * !tot_est_cvr_rt! / 100", "PYTHON_9.3")
-            add_records("Manual Component", "ManualTreatmentData_mancomp", ["MANL_CL_NM", "TRT_GUID"], "mantb2", "MANUALCOMPONENT")        
+			
             # Split out SCNTFC_CD fields
             arcpy.CopyFeatures_management("ManualTreatmentData", "ManualTreatmentData_spp")
             SppNum = 1
@@ -532,11 +487,7 @@ def main():
             sppfld = arcpy.ListFeatureClasses("mantbspp_*")
             arcpy.Append_management(sppfld, "ManualTreatmentData_spp", "NO_TEST")
             arcpy.Select_analysis("ManualTreatmentData_spp", "ManualTreatmentData_sppsel", "\"SCNTFC_CD\" IS NOT NULL")
-            sppcnt = arcpy.GetCount_management("ManualTreatmentData_sppsel").getOutput(0)
-            if int(sppcnt) > 0:
-                arcpy.AddField_management("ManualTreatmentData_sppsel", "cvrrttx", "TEXT", "", "", 20)
-                arcpy.CalculateField_management("ManualTreatmentData_sppsel", "cvrrttx", "!EST_CVR_RT!", "PYTHON_9.3") 
-                add_records("Manual Species", "ManualTreatmentData_sppsel", ["SCNTFC_CD", "cvrrttx", "TRT_GUID"], "mantb_all", "TREATMENTSPECIES")            
+				
         # Check for mechanical treatment data
         for fc in arcpy.ListFeatureClasses("MechanicalTreatmentData"):
             arcpy.AddMessage("Processing mechanical data.")
@@ -545,13 +496,6 @@ def main():
             arcpy.AddMessage("Mechanical Data Input Count: " + str(mechin))
             arcpy.AddField_management("MechanicalTreatmentData_fc", "UPLOAD_DT", "DATE")
             arcpy.CalculateField_management("MechanicalTreatmentData_fc", "UPLOAD_DT", "add_date()", "PYTHON_9.3", today_cb)
-            mechfm = arcpy.FieldMappings()
-            mechfm.addTable(SDEgdb + "\\dbo.TreatmentComponentLocation")
-            mechbef = arcpy.GetCount_management(SDEgdb + "\\dbo.TreatmentComponentLocation").getOutput(0)
-            arcpy.Append_management("MechanicalTreatmentData_fc", SDEgdb + "\\dbo.TreatmentComponentLocation", "NO_TEST", mechfm)
-            mechaft = arcpy.GetCount_management(SDEgdb + "\\dbo.TreatmentComponentLocation").getOutput(0)
-            mechdif = int(mechaft) - int(mechbef)
-            arcpy.AddMessage(str(mechdif) + " records added to TreatmentComponentLocation")
             
             # Merge to MECHANICALCOMPONENT
             arcpy.CopyFeatures_management("MechanicalTreatmentData_fc", "MechanicalTreatmentData_mechcomp")        
@@ -562,7 +506,7 @@ def main():
                 arcpy.CalculateField_management("MechanicalTreatmentData_mechcomp", "tot_est_cvr_rt", "cvrac(!tot_est_cvr_rt!,!temp_fld!)", "PYTHON_9.3", totaccalc)
             arcpy.DeleteField_management("MechanicalTreatmentData_mechcomp", "tempfld")
             arcpy.CalculateField_management("MechanicalTreatmentData_mechcomp", "MECHCMP_ME", "!CLCACRE_ME! * !tot_est_cvr_rt! / 100", "PYTHON_9.3")
-            add_records("Mechanical Species", "MechanicalTreatmentData_mechcomp", ["MECH_CL_NM", "TRT_GUID"], "mechtb2", "MECHANICALCOMPONENT")        
+			
             # Split out SCNTFC_CD fields
             arcpy.CopyFeatures_management("MechanicalTreatmentData", "MechanicalTreatmentData_spp")
             SppNum = 1
@@ -579,11 +523,7 @@ def main():
             sppfld = arcpy.ListFeatureClasses("mechtbspp_*")
             arcpy.Append_management(sppfld, "MechanicalTreatmentData_spp", "NO_TEST")
             arcpy.Select_analysis("MechanicalTreatmentData_spp", "MechanicalTreatmentData_sppsel", "\"SCNTFC_CD\" IS NOT NULL")
-            sppcnt = arcpy.GetCount_management("MechanicalTreatmentData_sppsel").getOutput(0)
-            if int(sppcnt) > 0:
-                arcpy.AddField_management("MechanicalTreatmentData_sppsel", "cvrrttx", "TEXT", "", "", 20)
-                arcpy.CalculateField_management("MechanicalTreatmentData_sppsel", "cvrrttx", "!EST_CVR_RT!", "PYTHON_9.3") 
-                add_records("Mechanical Species", "MechanicalTreatmentData_sppsel", ["SCNTFC_CD", "cvrrttx", "TRT_GUID"], "mechtb_all", "TREATMENTSPECIES")            
+				
         # Check for restoration treatment data
         for fc in arcpy.ListFeatureClasses("RestorationTreatmentData"):
             arcpy.AddMessage("Processing restoration data.")
@@ -591,14 +531,7 @@ def main():
             resin = arcpy.GetCount_management("RestorationTreatmentData_fc").getOutput(0)
             arcpy.AddMessage("Restoration Data Input Count: " + str(resin))
             arcpy.AddField_management("RestorationTreatmentData_fc", "UPLOAD_DT", "DATE")
-            arcpy.CalculateField_management("RestorationTreatmentData_fc", "UPLOAD_DT", "add_date()", "PYTHON_9.3", today_cb)
-            resfm = arcpy.FieldMappings()
-            resfm.addTable(SDEgdb + "\\dbo.TreatmentComponentLocation")
-            resbef = arcpy.GetCount_management(SDEgdb + "\\dbo.TreatmentComponentLocation").getOutput(0)
-            arcpy.Append_management("RestorationTreatmentData_fc", SDEgdb + "\\dbo.TreatmentComponentLocation", "NO_TEST", resfm)
-            resaft = arcpy.GetCount_management(SDEgdb + "\\dbo.TreatmentComponentLocation").getOutput(0)
-            resdif = int(resaft) - int(resbef)
-            arcpy.AddMessage(str(resdif) + " records added to TreatmentComponentLocation")
+            arcpy.CalculateField_management("RestorationTreatmentData_fc", "UPLOAD_DT", "add_date()", "PYTHON_9.3", today_cb))
             
             # Merge to RESTORATIONCOMPONENT
             arcpy.CopyFeatures_management("RestorationTreatmentData_fc", "RestorationTreatmentData_rescomp")
@@ -612,7 +545,7 @@ def main():
             arcpy.Append_management(resfld, "RestorationTreatmentData_rescomp", "NO_TEST")
             arcpy.Select_analysis("RestorationTreatmentData_rescomp", "RestorationTreatmentData_rescompsel", "\"REST_CL_NM\" IS NOT NULL")
             rescnt = arcpy.GetCount_management("RestorationTreatmentData_rescompsel").getOutput(0)
-            add_records("Restoration Component", "RestorationTreatmentData_rescompsel", ["REST_CL_NM", "TRT_GUID"], "restb2", "RESTORATIONCOMPONENT")        
+			
             # Split out SCNTFC_CD fields
             arcpy.CopyFeatures_management("RestorationTreatmentData", "RestorationTreatmentData_spp")
             SppNum = 1
@@ -629,11 +562,7 @@ def main():
             sppfld = arcpy.ListFeatureClasses("restbspp_*")
             arcpy.Append_management(sppfld, "RestorationTreatmentData_spp", "NO_TEST")
             arcpy.Select_analysis("RestorationTreatmentData_spp", "RestorationTreatmentData_sppsel", "\"SCNTFC_CD\" IS NOT NULL")
-            sppcnt = arcpy.GetCount_management("RestorationTreatmentData_sppsel").getOutput(0)
-            if int(sppcnt) > 0:
-                arcpy.AddField_management("RestorationTreatmentData_sppsel", "cvrrttx", "TEXT", "", "", 20)
-                arcpy.CalculateField_management("RestorationTreatmentData_sppsel", "cvrrttx", "!EST_CVR_RT!", "PYTHON_9.3")
-                add_records("Restoration Species", "RestorationTreatmentData_sppsel", ["SCNTFC_CD", "cvrrttx", "TRT_GUID"], "restb_all", "TREATMENTSPECIES")
+				
         # Check for revegetation treatment data
         for fc in arcpy.ListFeatureClasses("RevegetationTreatmentData"):
             arcpy.AddMessage("Processing revegetation data.")
@@ -642,17 +571,10 @@ def main():
             arcpy.AddMessage("Revegetation Data Input Count: " + str(revin))
             arcpy.AddField_management("RevegetationTreatmentData_fc", "UPLOAD_DT", "DATE")
             arcpy.CalculateField_management("RevegetationTreatmentData_fc", "UPLOAD_DT", "add_date()", "PYTHON_9.3", today_cb)
-            revfm = arcpy.FieldMappings()
-            revfm.addTable(SDEgdb + "\\dbo.TreatmentComponentLocation")
-            revbef = arcpy.GetCount_management(SDEgdb + "\\dbo.TreatmentComponentLocation").getOutput(0)
-            arcpy.Append_management("RevegetationTreatmentData_fc", SDEgdb + "\\dbo.TreatmentComponentLocation", "NO_TEST", revfm)
-            revaft = arcpy.GetCount_management(SDEgdb + "\\dbo.TreatmentComponentLocation").getOutput(0)
-            revdif = int(revaft) - int(revbef)
-            arcpy.AddMessage(str(revdif) + " records added to TreatmentComponentLocation")
             
             # Merge to REVEGETATIONCOMPONENT
             arcpy.CopyFeatures_management("RevegetationTreatmentData_fc", "RevegetationTreatmentData_revcomp")
-            add_records("Revegetation Component", "RevegetationTreatmentData_revcomp", ["VEG_UOM_NM", "PHNLGY_NM", "STOCK_ME", "TRT_GUID"], "revtb2", "REVEGETATIONCOMPONENT")        
+			
             # Split out SCNTFC_CD fields
             arcpy.CopyFeatures_management("RevegetationTreatmentData", "RevegetationTreatmentData_spp")
             SppNum = 1
@@ -668,12 +590,7 @@ def main():
                     SppNum += 1
             sppfld = arcpy.ListFeatureClasses("revtbspp_*")
             arcpy.Append_management(sppfld, "RevegetationTreatmentData_spp", "NO_TEST")
-            arcpy.Select_analysis("RevegetationTreatmentData_spp", "RevegetationTreatmentData_sppsel", "\"SCNTFC_CD\" IS NOT NULL")
-            sppcnt = arcpy.GetCount_management("RevegetationTreatmentData_sppsel").getOutput(0)
-            if int(sppcnt) > 0:
-                arcpy.AddField_management("RevegetationTreatmentData_sppsel", "cvrrttx", "TEXT", "", "", 20)
-                arcpy.CalculateField_management("RevegetationTreatmentData_sppsel", "cvrrttx", "!EST_CVR_RT!", "PYTHON_9.3")
-                add_records("Revegetation Species", "RevegetationTreatmentData_sppsel", ["SCNTFC_CD", "cvrrttx", "TRT_GUID"], "revtb_all", "TREATMENTSPECIES")            
+            arcpy.Select_analysis("RevegetationTreatmentData_spp", "RevegetationTreatmentData_sppsel", "\"SCNTFC_CD\" IS NOT NULL")           
 
         # Check for photo location data
         for fc in arcpy.ListFeatureClasses("PhotoLocation"):
@@ -683,13 +600,6 @@ def main():
             arcpy.AddMessage("Photo Location Input Count: " + str(photlocin))
             arcpy.AddField_management("PhotoLocation_fc", "UPLOAD_DT", "DATE")
             arcpy.CalculateField_management("PhotoLocation_fc", "UPLOAD_DT", "add_date()", "PYTHON_9.3", today_cb)
-            photfm = arcpy.FieldMappings()
-            photfm.addTable(SDEgdb + "\\dbo.PhotoLocation")
-            photlocbef = arcpy.GetCount_management(SDEgdb + "\\dbo.PhotoLocation").getOutput(0)
-            arcpy.Append_management("PhotoLocation_fc", SDEgdb + "\\dbo.PhotoLocation", "NO_TEST", photfm)
-            photlocaft = arcpy.GetCount_management(SDEgdb + "\\dbo.PhotoLocation").getOutput(0)
-            photlocdif = int(photlocaft) - int(photlocbef)
-            arcpy.AddMessage(str(photlocdif) + " records added to PhotoLocation")
             
             # Split out PHOTOS
             arcpy.CopyFeatures_management("PhotoLocation", "PhotoLocation_photos")
@@ -720,13 +630,7 @@ def main():
             if int(phcnt) > 0:
                 arcpy.CopyRows_management("PhotoLocation_photos2sel", "pht_all")
                 arcpy.AddMessage("Photo Input Count: " + str(phcnt))
-                phottbfm = arcpy.FieldMappings()
-                phottbfm.addTable(SDEgdb + "\\dbo.PHOTOS")
-                photbef = arcpy.GetCount_management(SDEgdb + "\\dbo.PHOTOS").getOutput(0)
-                arcpy.Append_management("pht_all", SDEgdb + "\\dbo.PHOTOS", "NO_TEST", phottbfm)                    
-                photaft = arcpy.GetCount_management(SDEgdb + "\\dbo.PHOTOS").getOutput(0)
-                photdif = int(photaft) - int(photbef)
-                arcpy.AddMessage(str(photdif) + " records added to PHOTOS")
+
 				
 		#### Complete the final upload to the SDE
 	    for fc in arcpy.ListFeatureClasses("WeedSurveyData_fc"):
@@ -769,13 +673,13 @@ def main():
             arcpy.AddMessage(str(propdif) + " records added to ProposedTreatmentLocation")
             sppcnt = calculate_and_count(fc, "_spp", "SCNTFC_CD", fc + "_allspp")
             if int(sppcnt) > 0:
-                add_records("Proposed Species", fc + "_sppsel", ["SCNTFC_CD", "PROP_TRT_GUID"], fc + "_allspp", "PROPOSALSPECIES")
+                add_records(fc + " Species", fc + "_sppsel", ["SCNTFC_CD", "PROP_TRT_GUID"], fc + "_allspp", "PROPOSALSPECIES")
             coopcnt = calculate_and_count(fc, "_coop", "COOP_PERS", fc + "_allcoop")
             if int(coopcnt) > 0:
-                add_records("Proposed Cooperator", fc + "_coopsel", ["COOP_PERS", "PROP_TRT_GUID"], fc + "_allcoop", "PROPOSALCOOPERATOR")
+                add_records(fc + " Cooperator", fc + "_coopsel", ["COOP_PERS", "PROP_TRT_GUID"], fc + "_allcoop", "PROPOSALCOOPERATOR")
             nepacnt = calculate_and_count(fc, "_nepa", "NEPA_NR", fc + "_allnepa")
             if int(nepacnt) > 0:
-                add_records("Proposed NEPA Component", fc + "_nepasel", ["NEPA_NR", "PROP_TRT_GUID"], fc + "_allnepa", "TREATMENTPROPOSALNUMBERS")
+                add_records(fc + " NEPA Component", fc + "_nepasel", ["NEPA_NR", "PROP_TRT_GUID"], fc + "_allnepa", "TREATMENTPROPOSALNUMBERS")
 			if fc == ("ProposedBiologicalData"):
             	bsppcnt = arcpy.GetCount_management("ProposedBiologicalData_biosppsel").getOutput(0)
             	if int(bsppcnt) > 0:
@@ -785,8 +689,58 @@ def main():
             	if int(bsppcnt) > 0:
                 	add_records("Proposed Chemical Component", "ProposedChemicalData_chemagsel", ["TRADE_NM", "PROP_TRT_GUID"], "pchemtb_all", "PROPOSALCHEMCOMPONENTAGENT")				
 
-	
+		for fc in arcpy.ListFeatureClasses("*TreatmentData"):
+			biofm = arcpy.FieldMappings()
+            biofm.addTable(SDEgdb + "\\dbo.TreatmentComponentLocation")
+            biobef = arcpy.GetCount_management(SDEgdb + "\\dbo.TreatmentComponentLocation").getOutput(0)
+            arcpy.Append_management(fc + "_fc", SDEgdb + "\\dbo.TreatmentComponentLocation", "NO_TEST", biofm)        
+            trtaft = arcpy.GetCount_management(SDEgdb + "\\dbo.TreatmentComponentLocation").getOutput(0)
+            trtdif = int(trtaft) - int(trtbef)
+            arcpy.AddMessage(str(trtdif) + " records added to TreatmentComponentLocation")
+			sppcnt = arcpy.GetCount_management(fc + "_sppsel").getOutput(0)
+            if int(sppcnt) > 0:
+                arcpy.AddField_management(fc + "_sppsel", "cvrrttx", "TEXT", "", "", 20)
+                arcpy.CalculateField_management(fc + "_sppsel", "cvrrttx", "!EST_CVR_RT!", "PYTHON_9.3")
+                add_records(fc + " Species", fc + "_sppsel", ["SCNTFC_CD", "cvrrttx", "TRT_GUID"], "trttb_all", "TREATMENTSPECIES")
+			if fc == ("BiologicalTreatmentData"):
+				add_records("Biological Component", "BiologicalTreatmentData_biocomp", ["BIO_SCNTFC_CD", "TRT_GUID"], "biotb_all", "BIOLOGICALCOMPONENT")
+			if fc == ("ChemicalTreatmentData"):
+				add_records("Chemical Component", "ChemicalTreatmentData_chemcomp", ["TRT_GUID"], "chemtb_all", "CHEMICALCOMPONENT")
+				herbcnt = arcpy.GetCount_management("ChemicalTreatmentData_chemag2sel").getOutput(0)
+            	if int(herbcnt) > 0:
+                	add_records("Chemical Agent", "ChemicalTreatmentData_chemag2sel", ["TRADE_NM", "AGT_APP_RT", "APP_UOM_NM", "MNFCTR_NM", "TRT_GUID"], "chemtb_all", "CHEMICALCOMPCONTROLAGENT")
+				for fc == ("ChemicalTreatmentData_chemadj2sel):
+					adjcnt = arcpy.GetCount_management("ChemicalTreatmentData_chemadj2sel").getOutput(0)
+                	if int(adjcnt) > 0:
+                    	add_records("Chemical Adjuvant", "ChemicalTreatmentData_chemadj2sel", ["TRT_GUID", "CONAGT_GUID", "AGT_UOM_NM", "ACTLUSE_QTY", "TRADE_NM", "AGT_APP_RT", "APP_UOM_NM"], "chemtb_all", "ADJUVANTCOMPONENTAGENT")                
+			if fc == ("FireTreatmentData"):
+				add_records("Fire Component", "FireTreatmentData_firecomp", ["INTNSTY_NM", "FUELMDL_TX", "TRT_GUID"], "firetb2", "FIRECOMPONENT")
+			if fc == ("ManualTreatmentData"):
+				add_records("Manual Component", "ManualTreatmentData_mancomp", ["MANL_CL_NM", "TRT_GUID"], "mantb2", "MANUALCOMPONENT")
+			if fc == ("MechanicalTreatmentData"):
+				add_records("Mechanical Species", "MechanicalTreatmentData_mechcomp", ["MECH_CL_NM", "TRT_GUID"], "mechtb2", "MECHANICALCOMPONENT")
+			if fc == ("RestorationTreatmentData"):
+				add_records("Restoration Component", "RestorationTreatmentData_rescompsel", ["REST_CL_NM", "TRT_GUID"], "restb2", "RESTORATIONCOMPONENT")
+			if fc == ("RevegetationTreatmentData"):
+				add_records("Revegetation Component", "RevegetationTreatmentData_revcomp", ["VEG_UOM_NM", "PHNLGY_NM", "STOCK_ME", "TRT_GUID"], "revtb2", "REVEGETATIONCOMPONENT")
+		for fc in arcpy.ListFeatureClasses("PhotoLocation"):
+			photfm = arcpy.FieldMappings()
+            photfm.addTable(SDEgdb + "\\dbo.PhotoLocation")
+            photlocbef = arcpy.GetCount_management(SDEgdb + "\\dbo.PhotoLocation").getOutput(0)
+            arcpy.Append_management("PhotoLocation_fc", SDEgdb + "\\dbo.PhotoLocation", "NO_TEST", photfm)
+            photlocaft = arcpy.GetCount_management(SDEgdb + "\\dbo.PhotoLocation").getOutput(0)
+            photlocdif = int(photlocaft) - int(photlocbef)
+            arcpy.AddMessage(str(photlocdif) + " records added to PhotoLocation")
+			for fc in arcpy.ListFeatureClasses("pht_all"):
+				phottbfm = arcpy.FieldMappings()
+            	phottbfm.addTable(SDEgdb + "\\dbo.PHOTOS")
+            	photbef = arcpy.GetCount_management(SDEgdb + "\\dbo.PHOTOS").getOutput(0)
+            	arcpy.Append_management("pht_all", SDEgdb + "\\dbo.PHOTOS", "NO_TEST", phottbfm)                    
+                photaft = arcpy.GetCount_management(SDEgdb + "\\dbo.PHOTOS").getOutput(0)
+                photdif = int(photaft) - int(photbef)
+                arcpy.AddMessage(str(photdif) + " records added to PHOTOS")
 			
+	
     # except Exception as e:
 
     #     tb = sys.exc_info()[2]
