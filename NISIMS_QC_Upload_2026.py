@@ -4,8 +4,7 @@
 # used by the Data Manager for the EPMT program.
 # Author: Jennifer Sieracki
 # Created: 2015-08-03 12:58
-####
-# Updated: 2026-11
+# Updated: 2026-11-12
 #----------------------------------------------------------------------------------------------------------------------
 
 # Import modules
@@ -23,7 +22,7 @@ def SDE_append_workaround(aprec, SDErec):
     	Return: None
     	"""
 	fields = arcpy.ListFields(aprec)
-	with arcpy.da.Editor(SDEgdb):
+	with arcpy.da.Editor(SDEgdb) as edit:
 		edit.startOperation()
 		with arcpy.da.SearchCursor(aprec, fields) as search_cursor:
 			with arcpy.da.InsertCursor(SDErec, fields) as insert_cursor:
@@ -79,7 +78,7 @@ def calculate_and_count(original_feature, feature_suffix, field_prefix, temp_fea
         arcpy.Select_analysis(original_feature + feature_suffix, temp_feature_prefix + str(SppNum), "\"" + field.name + "\"" + " IS NOT NULL")
         RecNum = arcpy.GetCount_management(temp_feature_prefix + str(SppNum)).getOutput(0)
         if int(RecNum) > 0:
-            arcpy.CalculateField_management(temp_feature_prefix + str(SppNum), field_prefix, "!" + field.name + "!", "PYTHON_9.3")
+            arcpy.CalculateField_management(temp_feature_prefix + str(SppNum), field_prefix, "!" + field.name + "!", "PYTHON3")
             SppNum += 1
     sppfld = arcpy.ListFeatureClasses(temp_feature_prefix + "*")
     SppCt = len(sppfld)
@@ -115,7 +114,7 @@ def main():
             arcpy.AddMessage("Weed Survey Input Count: " + str(survin))
             arcpy.CopyFeatures_management("WeedSurveyData", "WeedSurveyData_fc")
             arcpy.AddField_management("WeedSurveyData_fc", "UPLOAD_DT", "DATE")
-            arcpy.CalculateField_management("WeedSurveyData_fc", "UPLOAD_DT", "add_date()", "PYTHON_9.3", today_cb)
+            arcpy.CalculateField_management("WeedSurveyData_fc", "UPLOAD_DT", "add_date()", "PYTHON3", today_cb)
 
         # Check for Infestation data
         for fc in arcpy.ListFeatureClasses("WeedInfestationData"):
@@ -123,9 +122,9 @@ def main():
             arcpy.CopyFeatures_management("WeedInfestationData", "WeedInfestationData_fc")
             infin = arcpy.GetCount_management("WeedInfestationData_fc").getOutput(0)
             arcpy.AddMessage("Weed Infestation Input Count: " + str(infin))
-            arcpy.CalculateField_management("WeedInfestationData_fc", "NETACRE_ME", "!GRSACRE_ME! * !EST_CVR_RT! / 100", "PYTHON_9.3")
+            arcpy.CalculateField_management("WeedInfestationData_fc", "NETACRE_ME", "!GRSACRE_ME! * !EST_CVR_RT! / 100", "PYTHON3")
             arcpy.AddField_management("WeedInfestationData_fc", "DelID", "LONG")
-            arcpy.CalculateField_management("WeedInfestationData_fc", "DelID", "autoIncrement()", "PYTHON_9.3", count_cb)
+            arcpy.CalculateField_management("WeedInfestationData_fc", "DelID", "autoIncrement()", "PYTHON3", count_cb)
 
             # Calculate currentness
             n=0
@@ -140,57 +139,57 @@ def main():
                 else:
                     arcpy.CopyFeatures_management("WeedInfestationData_fc", "WeedInfestationSurvey")
             arcpy.AddField_management("WeedInfestationSurvey", "SCNTFC_CD_upload", "TEXT", "", "", 10)
-            arcpy.CalculateField_management("WeedInfestationSurvey", "SCNTFC_CD_upload", "!SCNTFC_CD!", "PYTHON_9.3")
+            arcpy.CalculateField_management("WeedInfestationSurvey", "SCNTFC_CD_upload", "!SCNTFC_CD!", "PYTHON3")
             arcpy.AddField_management("WeedInfestationSurvey", "BEGIN_DT_upload", "DATE")
-            arcpy.CalculateField_management("WeedInfestationSurvey", "BEGIN_DT_upload", "!BEGIN_DT!", "PYTHON_9.3")
+            arcpy.CalculateField_management("WeedInfestationSurvey", "BEGIN_DT_upload", "!BEGIN_DT!", "PYTHON3")
             arcpy.CopyFeatures_management(SDEgdb + "\\dbo.WeedInfestationLocation", "WeedInfCopy")
             arcpy.SpatialJoin_analysis("WeedInfCopy", "WeedInfestationSurvey", "WeedInfJoin", "JOIN_ONE_TO_MANY", "KEEP_COMMON")
             
             arcpy.AddField_management("WeedInfJoin", "DelID_join", "LONG")
-            arcpy.CalculateField_management("WeedInfJoin", "DelID_join", "!DelID!", "PYTHON_9.3")
+            arcpy.CalculateField_management("WeedInfJoin", "DelID_join", "!DelID!", "PYTHON3")
             arcpy.Select_analysis("WeedInfJoin","WeedInfSel", "\"SCNTFC_CD\" = \"SCNTFC_CD_upload\" AND \"BEGIN_DT\" < \"BEGIN_DT_upload\"")
 
-            arcpy.CalculateField_management("WeedInfSel", "CURRENT_CD", "\"H\"", "PYTHON_9.3")
-            arcpy.CalculateField_management("WeedInfSel", "END_DT", "!BEGIN_DT_upload!", "PYTHON_9.3")
+            arcpy.CalculateField_management("WeedInfSel", "CURRENT_CD", "\"H\"", "PYTHON3")
+            arcpy.CalculateField_management("WeedInfSel", "END_DT", "!BEGIN_DT_upload!", "PYTHON3")
             arcpy.AddField_management("WeedInfSel", "CURRENT_CD_join", "TEXT", "", "", 1)
-            arcpy.CalculateField_management("WeedInfSel", "CURRENT_CD_join", "!CURRENT_CD!", "PYTHON_9.3")
+            arcpy.CalculateField_management("WeedInfSel", "CURRENT_CD_join", "!CURRENT_CD!", "PYTHON3")
             arcpy.AddField_management("WeedInfSel", "GUID_TX", "TEXT", "", "", 100)
-            arcpy.CalculateField_management("WeedInfSel", "GUID_TX", "!INF_GUID!", "PYTHON_9.3")
+            arcpy.CalculateField_management("WeedInfSel", "GUID_TX", "!INF_GUID!", "PYTHON3")
             arcpy.DeleteField_management("WeedInfSel", "CURRENT_CD")
 
             with arcpy.da.Editor(SDEgdb):
                 edit.startOperation()
                 arcpy.analysis.Statistics("WeedInfSel", SDEgdb + "\\dbo.WeedInfSDESum", [["END_DT", "MIN"]], "GUID_TX;CURRENT_CD_join")
                 arcpy.JoinField_management(SDEgdb + "\\dbo.WeedInfestationLocation", "INF_GUID", SDEgdb + "\\dbo.WeedInfSDESum", "GUID_TX", ["CURRENT_CD_join", "GUID_TX", "MIN_END_DT"])
-                arcpy.CalculateField_management(SDEgdb + "\\dbo.WeedInfestationLocation", "CURRENT_CD", "calccur(!CURRENT_CD_join!, !CURRENT_CD!)", "PYTHON_9.3", curnull)
-                arcpy.CalculateField_management(SDEgdb + "\\dbo.WeedInfestationLocation", "END_DT", "Calc(!CURRENT_CD!, !END_DT!, !MIN_END_DT!)", "PYTHON_9.3", endnotnull_cb)
+                arcpy.CalculateField_management(SDEgdb + "\\dbo.WeedInfestationLocation", "CURRENT_CD", "calccur(!CURRENT_CD_join!, !CURRENT_CD!)", "PYTHON3", curnull)
+                arcpy.CalculateField_management(SDEgdb + "\\dbo.WeedInfestationLocation", "END_DT", "Calc(!CURRENT_CD!, !END_DT!, !MIN_END_DT!)", "PYTHON3", endnotnull_cb)
                 arcpy.DeleteField_management(SDEgdb + "\\dbo.WeedInfestationLocation", "CURRENT_CD_join;MIN_END_DT;GUID_TX")           
                 arcpy.Delete_management(SDEgdb + "\\dbo.WeedInfSDESum")
                 edit.stopOperation()
 
             arcpy.AddField_management("WeedInfSel", "CURRENT_CD", "TEXT", "", "", 1)
-            arcpy.CalculateField_management("WeedInfSel", "CURRENT_CD", "\"C\"", "PYTHON_9.3")
+            arcpy.CalculateField_management("WeedInfSel", "CURRENT_CD", "\"C\"", "PYTHON3")
             arcpy.AddField_management("WeedInfSel", "END_DT", "DATE")
-            arcpy.CalculateField_management("WeedInfSel", "END_DT", "None", "PYTHON_9.3")
+            arcpy.CalculateField_management("WeedInfSel", "END_DT", "None", "PYTHON3")
             arcpy.Select_analysis("WeedInfJoin", "WeedInfSel2", "\"SCNTFC_CD\" = \"SCNTFC_CD_upload\" AND \"BEGIN_DT\" > \"BEGIN_DT_upload\"")
-            arcpy.CalculateField_management("WeedInfSel2", "CURRENT_CD", "\"H\"", "PYTHON_9.3")
-            arcpy.CalculateField_management("WeedInfSel2", "END_DT", "!BEGIN_DT!", "PYTHON_9.3")
+            arcpy.CalculateField_management("WeedInfSel2", "CURRENT_CD", "\"H\"", "PYTHON3")
+            arcpy.CalculateField_management("WeedInfSel2", "END_DT", "!BEGIN_DT!", "PYTHON3")
             arcpy.Select_analysis("WeedInfJoin", "WeedInfSel3", "\"SCNTFC_CD\" <> \"SCNTFC_CD_upload\"")
-            arcpy.CalculateField_management("WeedInfSel3", "CURRENT_CD", "\"C\"", "PYTHON_9.3")
-            arcpy.CalculateField_management("WeedInfSel3", "END_DT", "None", "PYTHON_9.3")
+            arcpy.CalculateField_management("WeedInfSel3", "CURRENT_CD", "\"C\"", "PYTHON3")
+            arcpy.CalculateField_management("WeedInfSel3", "END_DT", "None", "PYTHON3")
             arcpy.Append_management(["WeedInfSel2", "WeedInfSel3"], "WeedInfSel", "NO_TEST")
             arcpy.Statistics_analysis("WeedInfSel", "WeedInfSum", [["END_DT", "MIN"]], "DelID_join")
             arcpy.AddField_management("WeedInfSum", "CURRENT_CD_sum", "TEXT", "", "", 1)
-            arcpy.CalculateField_management("WeedInfSum", "CURRENT_CD_sum", "Calc(!MIN_END_DT!)", "PYTHON_9.3", send_cb)
+            arcpy.CalculateField_management("WeedInfSum", "CURRENT_CD_sum", "Calc(!MIN_END_DT!)", "PYTHON3", send_cb)
             arcpy.JoinField_management("WeedInfestationData_fc", "DelID", "WeedInfSum", "DelID_join", ["CURRENT_CD_sum", "MIN_END_DT"])
-            arcpy.CalculateField_management("WeedInfestationData_fc", "CURRENT_CD", "!CURRENT_CD_sum!", "PYTHON_9.3")
-            arcpy.CalculateField_management("WeedInfestationData_fc", "END_DT", "!MIN_END_DT!", "PYTHON_9.3")
-            arcpy.CalculateField_management("WeedInfestationData_fc", "CURRENT_CD", "calcnull(!CURRENT_CD!)", "PYTHON_9.3", null_cb)
+            arcpy.CalculateField_management("WeedInfestationData_fc", "CURRENT_CD", "!CURRENT_CD_sum!", "PYTHON3")
+            arcpy.CalculateField_management("WeedInfestationData_fc", "END_DT", "!MIN_END_DT!", "PYTHON3")
+            arcpy.CalculateField_management("WeedInfestationData_fc", "CURRENT_CD", "calcnull(!CURRENT_CD!)", "PYTHON3", null_cb)
             arcpy.DeleteField_management("WeedInfestationData_fc", "CURRENT_CD_sum;MIN_END_DT;DelID_join")
 
             # Calculate upload date
             arcpy.AddField_management("WeedInfestationData_fc", "UPLOAD_DT", "DATE")
-            arcpy.CalculateField_management("WeedInfestationData_fc", "UPLOAD_DT", "add_date()", "PYTHON_9.3", today_cb)
+            arcpy.CalculateField_management("WeedInfestationData_fc", "UPLOAD_DT", "add_date()", "PYTHON3", today_cb)
 
             # Split out LU_CTGY_NM fields
             arcpy.CopyFeatures_management("WeedInfestationData", "WeedInfestationData_lu")
@@ -199,7 +198,7 @@ def main():
                 arcpy.Select_analysis("WeedInfestationData_lu", "lutb2_" + str(LuNum), "\"" + field.name + "\"" + " IS NOT NULL")
                 RecNum = arcpy.GetCount_management("lutb2_" + str(LuNum)).getOutput(0)
                 if int(RecNum) > 0:
-                    arcpy.CalculateField_management("lutb2_" + str(LuNum), "LU_CTGY_NM", "!" + field.name + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("lutb2_" + str(LuNum), "LU_CTGY_NM", "!" + field.name + "!", "PYTHON3")
                     LuNum += 1
             lufld = arcpy.ListFeatureClasses("lutb2_*")
             arcpy.CreateFeatureclass_management("memory", "WeedInfestationData_copy", "POLYGON", "WeedInfestationData_lu", "", "", new_spatialref)
@@ -214,7 +213,7 @@ def main():
             propbioin = arcpy.GetCount_management("ProposedBiologicalData_fc").getOutput(0)
             arcpy.AddMessage("Proposed Biological Data Input Count: " + str(propbioin))
             arcpy.AddField_management("ProposedBiologicalData_fc", "UPLOAD_DT", "DATE")
-            arcpy.CalculateField_management("ProposedBiologicalData_fc", "UPLOAD_DT", "add_date()", "PYTHON_9.3", today_cb)
+            arcpy.CalculateField_management("ProposedBiologicalData_fc", "UPLOAD_DT", "add_date()", "PYTHON3", today_cb)
 
             # Split out BIO_SCNTFC_CD fields
             arcpy.CopyFeatures_management("ProposedBiologicalData", "ProposedBiologicalData_biospp")
@@ -223,25 +222,25 @@ def main():
                 arcpy.Select_analysis("ProposedBiologicalData_biospp", "pbiotb4_" + str(BsppNum), "\"" + field.name + "\"" + " IS NOT NULL")            
                 RecNum = arcpy.GetCount_management("pbiotb4_" + str(BsppNum)).getOutput(0)
                 if int(RecNum) > 0:
-                    arcpy.CalculateField_management("pbiotb4_" + str(BsppNum), "BIO_SCNTFC_CD", "!" + field.name + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("pbiotb4_" + str(BsppNum), "BIO_SCNTFC_CD", "!" + field.name + "!", "PYTHON3")
                     BioNum = str(field.name)
                     BioNum = BioNum.strip("BIO_SCNTFC_CD")
                     BioUse = str("SPC_USE_QY" + BioNum)
-                    arcpy.CalculateField_management("pbiotb4_" + str(BsppNum), "SPC_USE_QY", "!" + BioUse + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("pbiotb4_" + str(BsppNum), "SPC_USE_QY", "!" + BioUse + "!", "PYTHON3")
                     BioMat = str("HSTMATL_NM" + BioNum)
-                    arcpy.CalculateField_management("pbiotb4_" + str(BsppNum), "HSTMATL_NM", "!" + BioMat + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("pbiotb4_" + str(BsppNum), "HSTMATL_NM", "!" + BioMat + "!", "PYTHON3")
                     BioPDt = str("PRMT_DT" + BioNum)
-                    arcpy.CalculateField_management("pbiotb4_" + str(BsppNum), "PRMT_DT", "!" + BioPDt + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("pbiotb4_" + str(BsppNum), "PRMT_DT", "!" + BioPDt + "!", "PYTHON3")
                     BioPRq = str("PRMTREQ_FL" + BioNum)
-                    arcpy.CalculateField_management("pbiotb4_" + str(BsppNum), "PRMTREQ_FL", "!" + BioPRq + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("pbiotb4_" + str(BsppNum), "PRMTREQ_FL", "!" + BioPRq + "!", "PYTHON3")
                     BioLCy = str("LFCYCLE_NM" + BioNum)
-                    arcpy.CalculateField_management("pbiotb4_" + str(BsppNum), "LFCYCLE_NM", "!" + BioLCy + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("pbiotb4_" + str(BsppNum), "LFCYCLE_NM", "!" + BioLCy + "!", "PYTHON3")
                     BioCty = str("CLLCNTY_NM" + BioNum)
-                    arcpy.CalculateField_management("pbiotb4_" + str(BsppNum), "CLLCNTY_NM", "!" + BioCty + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("pbiotb4_" + str(BsppNum), "CLLCNTY_NM", "!" + BioCty + "!", "PYTHON3")
                     BioSta = str ("CLSTATE_CD" + BioNum)
-                    arcpy.CalculateField_management("pbiotb4_" + str(BsppNum), "CLSTATE_CD", "!" + BioSta + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("pbiotb4_" + str(BsppNum), "CLSTATE_CD", "!" + BioSta + "!", "PYTHON3")
                     BioPmt = str("PRMT_NR" + BioNum)
-                    arcpy.CalculateField_management("pbiotb4_" + str(BsppNum), "PRMT_NR", "!" + BioPmt + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("pbiotb4_" + str(BsppNum), "PRMT_NR", "!" + BioPmt + "!", "PYTHON3")
                     BsppNum += 1
 				bsppfld = arcpy.ListFeatureClasses("pbiotb4_*")
             	arcpy.Append_management(bsppfld, "ProposedBiologicalData_biospp", "NO_TEST")
@@ -254,7 +253,7 @@ def main():
             propchemin = arcpy.GetCount_management("ProposedChemicalData_fc").getOutput(0)
             arcpy.AddMessage("Proposed Chemical Data Input Count: " + str(propchemin))
             arcpy.AddField_management("ProposedChemicalData_fc", "UPLOAD_DT", "DATE")
-            arcpy.CalculateField_management("ProposedChemicalData_fc", "UPLOAD_DT", "add_date()", "PYTHON_9.3", today_cb)      
+            arcpy.CalculateField_management("ProposedChemicalData_fc", "UPLOAD_DT", "add_date()", "PYTHON3", today_cb)      
 
             # Split out TRADE_NM fields
             arcpy.CopyFeatures_management("ProposedChemicalData", "ProposedChemicalData_chemag")
@@ -263,25 +262,25 @@ def main():
                 arcpy.Select_analysis("ProposedChemicalData_chemag", "pchemtb4_" + str(CagNum), "\"" + field.name + "\"" + " IS NOT NULL")            
                 RecNum = arcpy.GetCount_management("pchemtb4_" + str(CagNum)).getOutput(0)
                 if int(RecNum) > 0:
-                    arcpy.CalculateField_management("pchemtb4_" + str(CagNum), "TRADE_NM", "!" + field.name + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("pchemtb4_" + str(CagNum), "TRADE_NM", "!" + field.name + "!", "PYTHON3")
                     ChemNum = str(field.name)
                     ChemNum = ChemNum.strip("TRADE_NM")
                     ChemMnf = str("MNFCTR_NM" + ChemNum)
-                    arcpy.CalculateField_management("pchemtb4_" + str(CagNum), "MNFCTR_NM", "!" + ChemMnf + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("pchemtb4_" + str(CagNum), "MNFCTR_NM", "!" + ChemMnf + "!", "PYTHON3")
                     ChemSit = str("SITE_TX" + ChemNum)
-                    arcpy.CalculateField_management("pchemtb4_" + str(CagNum), "SITE_TX", "!" + ChemSit + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("pchemtb4_" + str(CagNum), "SITE_TX", "!" + ChemSit + "!", "PYTHON3")
                     ChemArt = str("APP_RT_TX" + ChemNum)
-                    arcpy.CalculateField_management("pchemtb4_" + str(CagNum), "APP_RT_TX", "!" + ChemArt + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("pchemtb4_" + str(CagNum), "APP_RT_TX", "!" + ChemArt + "!", "PYTHON3")
                     ChemAlo = str("APP_AMT_LOW" + ChemNum)
-                    arcpy.CalculateField_management("pchemtb4_" + str(CagNum), "APP_AMT_LOW", "!" + ChemAlo + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("pchemtb4_" + str(CagNum), "APP_AMT_LOW", "!" + ChemAlo + "!", "PYTHON3")
                     ChemAhi = str("APP_AMT_HIGH" + ChemNum)
-                    arcpy.CalculateField_management("pchemtb4_" + str(CagNum), "APP_AMT_HIGH", "!" + ChemAhi + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("pchemtb4_" + str(CagNum), "APP_AMT_HIGH", "!" + ChemAhi + "!", "PYTHON3")
                     ChemTid = str("TRT_ID" + ChemNum)
-                    arcpy.CalculateField_management("pchemtb4_" + str(CagNum), "TRT_ID", "!" + ChemTid + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("pchemtb4_" + str(CagNum), "TRT_ID", "!" + ChemTid + "!", "PYTHON3")
                     ChemRol = str("ROLE_NM" + ChemNum)
-                    arcpy.CalculateField_management("pchemtb4_" + str(CagNum), "ROLE_NM", "!" + ChemRol + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("pchemtb4_" + str(CagNum), "ROLE_NM", "!" + ChemRol + "!", "PYTHON3")
                     ChemCrt = str("CERT_NR" + ChemNum)
-                    arcpy.CalculateField_management("pchemtb4_" + str(CagNum), "CERT_NR", "!" + ChemCrt + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("pchemtb4_" + str(CagNum), "CERT_NR", "!" + ChemCrt + "!", "PYTHON3")
                     CagNum += 1
             Cagfld = arcpy.ListFeatureClasses("pchemtb4_*")
             arcpy.Append_management(Cagfld, "ProposedChemicalData_chemag", "NO_TEST")
@@ -294,7 +293,7 @@ def main():
             propothin = arcpy.GetCount_management("ProposedOtherData_fc").getOutput(0)
             arcpy.AddMessage("Proposed Other Data Input Count: " + str(propothin))
             arcpy.AddField_management("ProposedOtherData_fc", "UPLOAD_DT", "DATE")
-            arcpy.CalculateField_management("ProposedOtherData_fc", "UPLOAD_DT", "add_date()", "PYTHON_9.3", today_cb)         
+            arcpy.CalculateField_management("ProposedOtherData_fc", "UPLOAD_DT", "add_date()", "PYTHON3", today_cb)         
 
         # Check for biological treatment data
         for fc in arcpy.ListFeatureClasses("BiologicalTreatmentData"):
@@ -303,17 +302,17 @@ def main():
             bioin = arcpy.GetCount_management("BiologicalTreatmentData_fc").getOutput(0)
             arcpy.AddMessage("Biological Treatment Data Input Count: " + str(bioin))
             arcpy.AddField_management("BiologicalTreatmentData_fc", "UPLOAD_DT", "DATE")
-            arcpy.CalculateField_management("BiologicalTreatmentData_fc", "UPLOAD_DT", "add_date()", "PYTHON_9.3", today_cb)   
+            arcpy.CalculateField_management("BiologicalTreatmentData_fc", "UPLOAD_DT", "add_date()", "PYTHON3", today_cb)   
             
             # Merge to BIOLOGICALCOMPONENT
             arcpy.CopyFeatures_management("BiologicalTreatmentData_fc", "BiologicalTreatmentData_biocomp")
             arcpy.AddField_management("BiologicalTreatmentData_biocomp", "tot_est_cvr_rt", "DOUBLE")
             arcpy.AddField_management("BiologicalTreatmentData_biocomp", "temp_fld", "DOUBLE")
             for field in arcpy.ListFields("BiologicalTreatmentData_biocomp", "EST_CVR_RT*"):
-                arcpy.CalculateField_management("BiologicalTreatmentData_biocomp", "temp_fld", "!" + field.name + "!", "PYTHON_9.3")
-                arcpy.CalculateField_management("BiologicalTreatmentData_biocomp", "tot_est_cvr_rt", "cvrac(!tot_est_cvr_rt!,!temp_fld!)", "PYTHON_9.3", totaccalc)
+                arcpy.CalculateField_management("BiologicalTreatmentData_biocomp", "temp_fld", "!" + field.name + "!", "PYTHON3")
+                arcpy.CalculateField_management("BiologicalTreatmentData_biocomp", "tot_est_cvr_rt", "cvrac(!tot_est_cvr_rt!,!temp_fld!)", "PYTHON3", totaccalc)
             arcpy.DeleteField_management("BiologicalTreatmentData_biocomp", "tempfld")
-            arcpy.CalculateField_management("BiologicalTreatmentData_biocomp", "CVRAREA_ME", "!CLCACRE_ME! * !tot_est_cvr_rt! / 100", "PYTHON_9.3")
+            arcpy.CalculateField_management("BiologicalTreatmentData_biocomp", "CVRAREA_ME", "!CLCACRE_ME! * !tot_est_cvr_rt! / 100", "PYTHON3")
 
 			# Split out SCNTFC_CD fields
             arcpy.CopyFeatures_management("BiologicalTreatmentData", "BiologicalTreatmentData_spp")
@@ -322,11 +321,11 @@ def main():
                 arcpy.Select_analysis("BiologicalTreatmentData_spp", "biotbspp_" + str(SppNum), "\"" + field.name + "\"" + " IS NOT NULL")
                 RecNum = arcpy.GetCount_management("biotbspp_" + str(SppNum)).getOutput(0)
                 if int(RecNum) > 0:
-                    arcpy.CalculateField_management("biotbspp_" + str(SppNum), "SCNTFC_CD", "!" + field.name + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("biotbspp_" + str(SppNum), "SCNTFC_CD", "!" + field.name + "!", "PYTHON3")
                     SpNum = str(field.name)
                     SpNum = SpNum.strip("SCNTFC_CD")
                     SpCov = str("EST_CVR_RT" + SpNum)
-                    arcpy.CalculateField_management("biotbspp_" + str(SppNum), "EST_CVR_RT", "!" + SpCov + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("biotbspp_" + str(SppNum), "EST_CVR_RT", "!" + SpCov + "!", "PYTHON3")
                     SppNum += 1
             sppfld = arcpy.ListFeatureClasses("biotbspp_*")
             arcpy.Append_management(sppfld, "BiologicalTreatmentData_spp", "NO_TEST")
@@ -339,17 +338,17 @@ def main():
             chemin = arcpy.GetCount_management("ChemicalTreatmentData_fc").getOutput(0)
             arcpy.AddMessage("Chemical Data Input Count: " + str(chemin))
             arcpy.AddField_management("ChemicalTreatmentData_fc", "UPLOAD_DT", "DATE")
-            arcpy.CalculateField_management("ChemicalTreatmentData_fc", "UPLOAD_DT", "add_date()", "PYTHON_9.3", today_cb)
+            arcpy.CalculateField_management("ChemicalTreatmentData_fc", "UPLOAD_DT", "add_date()", "PYTHON3", today_cb)
             
             # Merge to CHEMICALCOMPONENT
             arcpy.CopyFeatures_management("ChemicalTreatmentData_fc", "ChemicalTreatmentData_chemcomp")
             arcpy.AddField_management("ChemicalTreatmentData_chemcomp", "tot_est_cvr_rt", "DOUBLE")
             arcpy.AddField_management("ChemicalTreatmentData_chemcomp", "temp_fld", "DOUBLE")
             for field in arcpy.ListFields("ChemicalTreatmentData_chemcomp", "EST_CVR_RT*"):
-                arcpy.CalculateField_management("ChemicalTreatmentData_chemcomp", "temp_fld", "!" + field.name + "!", "PYTHON_9.3")
-                arcpy.CalculateField_management("ChemicalTreatmentData_chemcomp", "tot_est_cvr_rt", "cvrac(!tot_est_cvr_rt!,!temp_fld!)", "PYTHON_9.3", totaccalc)
+                arcpy.CalculateField_management("ChemicalTreatmentData_chemcomp", "temp_fld", "!" + field.name + "!", "PYTHON3")
+                arcpy.CalculateField_management("ChemicalTreatmentData_chemcomp", "tot_est_cvr_rt", "cvrac(!tot_est_cvr_rt!,!temp_fld!)", "PYTHON3", totaccalc)
             arcpy.DeleteField_management("ChemicalTreatmentData_chemcomp", "tempfld")
-            arcpy.CalculateField_management("ChemicalTreatmentData_chemcomp", "ESTACRE_ME", "!CLCACRE_ME! * !tot_est_cvr_rt! / 100", "PYTHON_9.3")
+            arcpy.CalculateField_management("ChemicalTreatmentData_chemcomp", "ESTACRE_ME", "!CLCACRE_ME! * !tot_est_cvr_rt! / 100", "PYTHON3")
         
             # Split out TRADE_NM fields
             arcpy.CopyFeatures_management("ChemicalTreatmentData", "ChemicalTreatmentData_chemag")
@@ -359,21 +358,21 @@ def main():
                 arcpy.Select_analysis("ChemicalTreatmentData_chemag", "chemtb5_" + str(HerbNum), "\"" + field.name + "\"" + " IS NOT NULL")
                 RecNum = arcpy.GetCount_management("chemtb5_" + str(HerbNum)).getOutput(0)
                 if int(RecNum) > 0:
-                    arcpy.CalculateField_management("chemtb5_" + str(HerbNum), "TRADE_NM", "!" + field.name + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("chemtb5_" + str(HerbNum), "TRADE_NM", "!" + field.name + "!", "PYTHON3")
                     ChemNum = str(field.name)
                     ChemNum = ChemNum.strip("TRADE_NM")
                     ChemAgRt = str("AGT_APP_RT" + ChemNum)
-                    arcpy.CalculateField_management("chemtb5_" + str(HerbNum), "AGT_APP_RT", "!" + ChemAgRt + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("chemtb5_" + str(HerbNum), "AGT_APP_RT", "!" + ChemAgRt + "!", "PYTHON3")
                     ChemApU = str("APP_UOM_NM" + ChemNum)
-                    arcpy.CalculateField_management("chemtb5_" + str(HerbNum), "APP_UOM_NM", "!" + ChemApU + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("chemtb5_" + str(HerbNum), "APP_UOM_NM", "!" + ChemApU + "!", "PYTHON3")
                     ChemMfr = str("MNFCTR_NM" + ChemNum)
-                    arcpy.CalculateField_management("chemtb5_" + str(HerbNum), "MNFCTR_NM", "!" + ChemMfr + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("chemtb5_" + str(HerbNum), "MNFCTR_NM", "!" + ChemMfr + "!", "PYTHON3")
                     ChemQty = str("ACTLUSE_QY" + ChemNum)
-                    arcpy.CalculateField_management("chemtb5_" + str(HerbNum), "ACTLUSE_QY", "!" + ChemQty + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("chemtb5_" + str(HerbNum), "ACTLUSE_QY", "!" + ChemQty + "!", "PYTHON3")
                     ChemQyU = str("AGT_UOM_NM" + ChemNum)
-                    arcpy.CalculateField_management("chemtb5_" + str(HerbNum), "AGT_UOM_NM", "!" + ChemQyU + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("chemtb5_" + str(HerbNum), "AGT_UOM_NM", "!" + ChemQyU + "!", "PYTHON3")
                     ChemEPA = str("EPAREGISTRATIONNUMBER" + ChemNum)
-                    arcpy.CalculateField_management("chemtb5_" + str(HerbNum), "EPAREGISTRATIONNUMBER", "!" + ChemEPA + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("chemtb5_" + str(HerbNum), "EPAREGISTRATIONNUMBER", "!" + ChemEPA + "!", "PYTHON3")
                     HerbNum += 1
             herbfld = arcpy.ListFeatureClasses("chemtb5_*")
             arcpy.Append_management(herbfld, "ChemicalTreatmentData_chemag2", "NO_TEST")
@@ -390,15 +389,15 @@ def main():
                 if int(RecNum) > 0:
                     AdjNR = str(field.name)
                     AdjNR = AdjNR.strip("ADJ_TRADE_NM")
-                    arcpy.CalculateField_management("chemtb7_" + str(AdjNum), "TRADE_NM", "!" + field.name + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("chemtb7_" + str(AdjNum), "TRADE_NM", "!" + field.name + "!", "PYTHON3")
                     AdjUnit = str("ADJ_AGT_UOM_NM" + AdjNR) 
-                    arcpy.CalculateField_management("chemtb7_" + str(AdjNum), "AGT_UOM_NM", "!" + AdjUnit + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("chemtb7_" + str(AdjNum), "AGT_UOM_NM", "!" + AdjUnit + "!", "PYTHON3")
                     AdjAgRt = str("ADJ_AGT_APP_RT" + AdjNR)
-                    arcpy.CalculateField_management("chemtb7_" + str(AdjNum), "AGT_APP_RT", "!" + AdjAgRt + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("chemtb7_" + str(AdjNum), "AGT_APP_RT", "!" + AdjAgRt + "!", "PYTHON3")
                     AdjApU = str("ADJ_APP_UOM_NM" + AdjNR)
-                    arcpy.CalculateField_management("chemtb7_" + str(AdjNum), "APP_UOM_NM", "!" + AdjApU + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("chemtb7_" + str(AdjNum), "APP_UOM_NM", "!" + AdjApU + "!", "PYTHON3")
                     AdjAct = str("ADJ_ACTLUSE_QTY" + AdjNR)
-                    arcpy.CalculateField_management("chemtb7_" + str(AdjNum), "ACTLUSE_QTY", "!" + AdjAct + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("chemtb7_" + str(AdjNum), "ACTLUSE_QTY", "!" + AdjAct + "!", "PYTHON3")
                     AdjNum += 1
             adjfld = arcpy.ListFeatureClasses("chemtb7_*")
             adjct = len(adjfld)
@@ -413,11 +412,11 @@ def main():
                 arcpy.Select_analysis("ChemicalTreatmentData_spp", "chemtbspp_" + str(SppNum), "\"" + field.name + "\"" + " IS NOT NULL")
                 RecNum = arcpy.GetCount_management("chemtbspp_" + str(SppNum)).getOutput(0)
                 if int(RecNum) > 0:
-                    arcpy.CalculateField_management("chemtbspp_" + str(SppNum), "SCNTFC_CD", "!" + field.name + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("chemtbspp_" + str(SppNum), "SCNTFC_CD", "!" + field.name + "!", "PYTHON3")
                     SpNum = str(field.name)
                     SpNum = SpNum.strip("SCNTFC_CD")
                     SpCov = str("EST_CVR_RT" + SpNum)
-                    arcpy.CalculateField_management("chemtbspp_" + str(SppNum), "EST_CVR_RT", "!" + SpCov + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("chemtbspp_" + str(SppNum), "EST_CVR_RT", "!" + SpCov + "!", "PYTHON3")
                     SppNum += 1
             sppfld = arcpy.ListFeatureClasses("chemtbspp_*")
             arcpy.Append_management(sppfld, "ChemicalTreatmentData_spp", "NO_TEST")
@@ -430,7 +429,7 @@ def main():
             firin = arcpy.GetCount_management("FireTreatmentData_fc").getOutput(0)
             arcpy.AddMessage("Fire Data Input Count: " + str(firin))
             arcpy.AddField_management("FireTreatmentData_fc", "UPLOAD_DT", "DATE")
-            arcpy.CalculateField_management("FireTreatmentData_fc", "UPLOAD_DT", "add_date()", "PYTHON_9.3", today_cb)
+            arcpy.CalculateField_management("FireTreatmentData_fc", "UPLOAD_DT", "add_date()", "PYTHON3", today_cb)
             
             # Merge to FIRECOMPONENT
             arcpy.CopyFeatures_management("FireTreatmentData_fc", "FireTreatmentData_firecomp")
@@ -442,11 +441,11 @@ def main():
                 arcpy.Select_analysis("FireTreatmentData_spp", "firetbspp_" + str(SppNum), "\"" + field.name + "\"" + " IS NOT NULL")
                 RecNum = arcpy.GetCount_management("firetbspp_" + str(SppNum)).getOutput(0)
                 if int(RecNum) > 0:
-                    arcpy.CalculateField_management("firetbspp_" + str(SppNum), "SCNTFC_CD", "!" + field.name + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("firetbspp_" + str(SppNum), "SCNTFC_CD", "!" + field.name + "!", "PYTHON3")
                     SpNum = str(field.name)
                     SpNum = SpNum.strip("SCNTFC_CD")
                     SpCov = str("EST_CVR_RT" + SpNum)
-                    arcpy.CalculateField_management("firetbspp_" + str(SppNum), "EST_CVR_RT", "!" + SpCov + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("firetbspp_" + str(SppNum), "EST_CVR_RT", "!" + SpCov + "!", "PYTHON3")
                     SppNum += 1
             sppfld = arcpy.ListFeatureClasses("firetbspp_*")
             arcpy.Append_management(sppfld, "FireTreatmentData_spp", "NO_TEST")
@@ -459,17 +458,17 @@ def main():
             manin = arcpy.GetCount_management("ManualTreatmentData_fc").getOutput(0)
             arcpy.AddMessage("Manual Data Input Count: " + str(manin))
             arcpy.AddField_management("ManualTreatmentData_fc", "UPLOAD_DT", "DATE")
-            arcpy.CalculateField_management("ManualTreatmentData_fc", "UPLOAD_DT", "add_date()", "PYTHON_9.3", today_cb)
+            arcpy.CalculateField_management("ManualTreatmentData_fc", "UPLOAD_DT", "add_date()", "PYTHON3", today_cb)
             
             # Merge to MANUALCOMPONENT
             arcpy.CopyFeatures_management("ManualTreatmentData_fc", "ManualTreatmentData_mancomp")        
             arcpy.AddField_management("ManualTreatmentData_mancomp", "tot_est_cvr_rt", "DOUBLE")
             arcpy.AddField_management("ManualTreatmentData_mancomp", "temp_fld", "DOUBLE")
             for field in arcpy.ListFields("ManualTreatmentData_mancomp", "EST_CVR_RT*"):
-                arcpy.CalculateField_management("ManualTreatmentData_mancomp", "temp_fld", "!" + field.name + "!", "PYTHON_9.3")
-                arcpy.CalculateField_management("ManualTreatmentData_mancomp", "tot_est_cvr_rt", "cvrac(!tot_est_cvr_rt!,!temp_fld!)", "PYTHON_9.3", totaccalc)
+                arcpy.CalculateField_management("ManualTreatmentData_mancomp", "temp_fld", "!" + field.name + "!", "PYTHON3")
+                arcpy.CalculateField_management("ManualTreatmentData_mancomp", "tot_est_cvr_rt", "cvrac(!tot_est_cvr_rt!,!temp_fld!)", "PYTHON3", totaccalc)
             arcpy.DeleteField_management("ManualTreatmentData_mancomp", "tempfld")
-            arcpy.CalculateField_management("ManualTreatmentData_mancomp", "MANLCMP_ME", "!CLCACRE_ME! * !tot_est_cvr_rt! / 100", "PYTHON_9.3")
+            arcpy.CalculateField_management("ManualTreatmentData_mancomp", "MANLCMP_ME", "!CLCACRE_ME! * !tot_est_cvr_rt! / 100", "PYTHON3")
 			
             # Split out SCNTFC_CD fields
             arcpy.CopyFeatures_management("ManualTreatmentData", "ManualTreatmentData_spp")
@@ -478,11 +477,11 @@ def main():
                 arcpy.Select_analysis("ManualTreatmentData_spp", "mantbspp_" + str(SppNum), "\"" + field.name + "\"" + " IS NOT NULL")
                 RecNum = arcpy.GetCount_management("mantbspp_" + str(SppNum)).getOutput(0)
                 if int(RecNum) > 0:
-                    arcpy.CalculateField_management("mantbspp_" + str(SppNum), "SCNTFC_CD", "!" + field.name + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("mantbspp_" + str(SppNum), "SCNTFC_CD", "!" + field.name + "!", "PYTHON3")
                     SpNum = str(field.name)
                     SpNum = SpNum.strip("SCNTFC_CD")
                     SpCov = str("EST_CVR_RT" + SpNum)
-                    arcpy.CalculateField_management("mantbspp_" + str(SppNum), "EST_CVR_RT", "!" + SpCov + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("mantbspp_" + str(SppNum), "EST_CVR_RT", "!" + SpCov + "!", "PYTHON3")
                     SppNum += 1
             sppfld = arcpy.ListFeatureClasses("mantbspp_*")
             arcpy.Append_management(sppfld, "ManualTreatmentData_spp", "NO_TEST")
@@ -495,17 +494,17 @@ def main():
             mechin = arcpy.GetCount_management("MechanicalTreatmentData_fc").getOutput(0)
             arcpy.AddMessage("Mechanical Data Input Count: " + str(mechin))
             arcpy.AddField_management("MechanicalTreatmentData_fc", "UPLOAD_DT", "DATE")
-            arcpy.CalculateField_management("MechanicalTreatmentData_fc", "UPLOAD_DT", "add_date()", "PYTHON_9.3", today_cb)
+            arcpy.CalculateField_management("MechanicalTreatmentData_fc", "UPLOAD_DT", "add_date()", "PYTHON3", today_cb)
             
             # Merge to MECHANICALCOMPONENT
             arcpy.CopyFeatures_management("MechanicalTreatmentData_fc", "MechanicalTreatmentData_mechcomp")        
             arcpy.AddField_management("MechanicalTreatmentData_mechcomp", "tot_est_cvr_rt", "DOUBLE")
             arcpy.AddField_management("MechanicalTreatmentData_mechcomp", "temp_fld", "DOUBLE")
             for field in arcpy.ListFields("MechanicalTreatmentData_mechcomp", "EST_CVR_RT*"):
-                arcpy.CalculateField_management("MechanicalTreatmentData_mechcomp", "temp_fld", "!" + field.name + "!", "PYTHON_9.3")
-                arcpy.CalculateField_management("MechanicalTreatmentData_mechcomp", "tot_est_cvr_rt", "cvrac(!tot_est_cvr_rt!,!temp_fld!)", "PYTHON_9.3", totaccalc)
+                arcpy.CalculateField_management("MechanicalTreatmentData_mechcomp", "temp_fld", "!" + field.name + "!", "PYTHON3")
+                arcpy.CalculateField_management("MechanicalTreatmentData_mechcomp", "tot_est_cvr_rt", "cvrac(!tot_est_cvr_rt!,!temp_fld!)", "PYTHON3", totaccalc)
             arcpy.DeleteField_management("MechanicalTreatmentData_mechcomp", "tempfld")
-            arcpy.CalculateField_management("MechanicalTreatmentData_mechcomp", "MECHCMP_ME", "!CLCACRE_ME! * !tot_est_cvr_rt! / 100", "PYTHON_9.3")
+            arcpy.CalculateField_management("MechanicalTreatmentData_mechcomp", "MECHCMP_ME", "!CLCACRE_ME! * !tot_est_cvr_rt! / 100", "PYTHON3")
 			
             # Split out SCNTFC_CD fields
             arcpy.CopyFeatures_management("MechanicalTreatmentData", "MechanicalTreatmentData_spp")
@@ -514,11 +513,11 @@ def main():
                 arcpy.Select_analysis("MechanicalTreatmentData_spp", "mechtbspp_" + str(SppNum), "\"" + field.name + "\"" + " IS NOT NULL")
                 RecNum = arcpy.GetCount_management("mechtbspp_" + str(SppNum)).getOutput(0)
                 if int(RecNum) > 0:
-                    arcpy.CalculateField_management("mechtbspp_" + str(SppNum), "SCNTFC_CD", "!" + field.name + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("mechtbspp_" + str(SppNum), "SCNTFC_CD", "!" + field.name + "!", "PYTHON3")
                     SpNum = str(field.name)
                     SpNum = SpNum.strip("SCNTFC_CD")
                     SpCov = str("EST_CVR_RT" + SpNum)
-                    arcpy.CalculateField_management("mechtbspp_" + str(SppNum), "EST_CVR_RT", "!" + SpCov + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("mechtbspp_" + str(SppNum), "EST_CVR_RT", "!" + SpCov + "!", "PYTHON3")
                     SppNum += 1
             sppfld = arcpy.ListFeatureClasses("mechtbspp_*")
             arcpy.Append_management(sppfld, "MechanicalTreatmentData_spp", "NO_TEST")
@@ -531,7 +530,7 @@ def main():
             resin = arcpy.GetCount_management("RestorationTreatmentData_fc").getOutput(0)
             arcpy.AddMessage("Restoration Data Input Count: " + str(resin))
             arcpy.AddField_management("RestorationTreatmentData_fc", "UPLOAD_DT", "DATE")
-            arcpy.CalculateField_management("RestorationTreatmentData_fc", "UPLOAD_DT", "add_date()", "PYTHON_9.3", today_cb))
+            arcpy.CalculateField_management("RestorationTreatmentData_fc", "UPLOAD_DT", "add_date()", "PYTHON3", today_cb))
             
             # Merge to RESTORATIONCOMPONENT
             arcpy.CopyFeatures_management("RestorationTreatmentData_fc", "RestorationTreatmentData_rescomp")
@@ -540,7 +539,7 @@ def main():
                 arcpy.Select_analysis("RestorationTreatmentData_rescomp", "restb_" + str(ResNum), "\"" + field.name + "\"" + " IS NOT NULL")
                 RecNum = arcpy.GetCount_management("restb_" + str(ResNum)).getOutput(0)
                 if int(RecNum) > 0:
-                    arcpy.CalculateField_management("restb_" + str(ResNum), "REST_CL_NM", "!" + field.name + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("restb_" + str(ResNum), "REST_CL_NM", "!" + field.name + "!", "PYTHON3")
             resfld = arcpy.ListFeatureClasses("restb_*")
             arcpy.Append_management(resfld, "RestorationTreatmentData_rescomp", "NO_TEST")
             arcpy.Select_analysis("RestorationTreatmentData_rescomp", "RestorationTreatmentData_rescompsel", "\"REST_CL_NM\" IS NOT NULL")
@@ -553,11 +552,11 @@ def main():
                 arcpy.Select_analysis("RestorationTreatmentData_spp", "restbspp_" + str(SppNum), "\"" + field.name + "\"" + " IS NOT NULL")
                 RecNum = arcpy.GetCount_management("restbspp_" + str(SppNum)).getOutput(0)
                 if int(RecNum) > 0:
-                    arcpy.CalculateField_management("restbspp_" + str(SppNum), "SCNTFC_CD", "!" + field.name + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("restbspp_" + str(SppNum), "SCNTFC_CD", "!" + field.name + "!", "PYTHON3")
                     SpNum = str(field.name)
                     SpNum = SpNum.strip("SCNTFC_CD")
                     SpCov = str("EST_CVR_RT" + SpNum)
-                    arcpy.CalculateField_management("restbspp_" + str(SppNum), "EST_CVR_RT", "!" + SpCov + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("restbspp_" + str(SppNum), "EST_CVR_RT", "!" + SpCov + "!", "PYTHON3")
                     SppNum += 1
             sppfld = arcpy.ListFeatureClasses("restbspp_*")
             arcpy.Append_management(sppfld, "RestorationTreatmentData_spp", "NO_TEST")
@@ -570,7 +569,7 @@ def main():
             revin = arcpy.GetCount_management("RevegetationTreatmentData_fc").getOutput(0)
             arcpy.AddMessage("Revegetation Data Input Count: " + str(revin))
             arcpy.AddField_management("RevegetationTreatmentData_fc", "UPLOAD_DT", "DATE")
-            arcpy.CalculateField_management("RevegetationTreatmentData_fc", "UPLOAD_DT", "add_date()", "PYTHON_9.3", today_cb)
+            arcpy.CalculateField_management("RevegetationTreatmentData_fc", "UPLOAD_DT", "add_date()", "PYTHON3", today_cb)
             
             # Merge to REVEGETATIONCOMPONENT
             arcpy.CopyFeatures_management("RevegetationTreatmentData_fc", "RevegetationTreatmentData_revcomp")
@@ -582,11 +581,11 @@ def main():
                 arcpy.Select_analysis("RevegetationTreatmentData_spp", "revtbspp_" + str(SppNum), "\"" + field.name + "\"" + " IS NOT NULL")
                 RecNum = arcpy.GetCount_management("revtbspp_" + str(SppNum)).getOutput(0)
                 if int(RecNum) > 0:
-                    arcpy.CalculateField_management("revtbspp_" + str(SppNum), "SCNTFC_CD", "!" + field.name + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("revtbspp_" + str(SppNum), "SCNTFC_CD", "!" + field.name + "!", "PYTHON3")
                     SpNum = str(field.name)
                     SpNum = SpNum.strip("SCNTFC_CD")
                     SpCov = str("EST_CVR_RT" + SpNum)
-                    arcpy.CalculateField_management("revtbspp_" + str(SppNum), "EST_CVR_RT", "!" + SpCov + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("revtbspp_" + str(SppNum), "EST_CVR_RT", "!" + SpCov + "!", "PYTHON3")
                     SppNum += 1
             sppfld = arcpy.ListFeatureClasses("revtbspp_*")
             arcpy.Append_management(sppfld, "RevegetationTreatmentData_spp", "NO_TEST")
@@ -599,7 +598,7 @@ def main():
             photlocin = arcpy.GetCount_management("PhotoLocation_fc").getOutput(0)
             arcpy.AddMessage("Photo Location Input Count: " + str(photlocin))
             arcpy.AddField_management("PhotoLocation_fc", "UPLOAD_DT", "DATE")
-            arcpy.CalculateField_management("PhotoLocation_fc", "UPLOAD_DT", "add_date()", "PYTHON_9.3", today_cb)
+            arcpy.CalculateField_management("PhotoLocation_fc", "UPLOAD_DT", "add_date()", "PYTHON3", today_cb)
             
             # Split out PHOTOS
             arcpy.CopyFeatures_management("PhotoLocation", "PhotoLocation_photos")
@@ -608,19 +607,19 @@ def main():
                 arcpy.Select_analysis("PhotoLocation_photos", "Phototb_" + str(PhNum), "\"" + field.name + "\" IS NOT NULL")
                 RecNum = arcpy.GetCount_management("Phototb_" + str(PhNum)).getOutput(0)
                 if int(RecNum) > 0:
-                    arcpy.CalculateField_management("Phototb_" + str(PhNum), "PHOTODATE", "!" + field.name + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("Phototb_" + str(PhNum), "PHOTODATE", "!" + field.name + "!", "PYTHON3")
                     PhNR = str(field.name)
                     PhNR = PhNR.strip("PHOTODATE")
                     PhDeg = str("PHOTODEG" + PhNR)
-                    arcpy.CalculateField_management("Phototb_" + str(PhNum), "PHOTODEG", "!" + PhDeg + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("Phototb_" + str(PhNum), "PHOTODEG", "!" + PhDeg + "!", "PYTHON3")
                     PhPre = str("PREFIX" + PhNR)
-                    arcpy.CalculateField_management("Phototb_" + str(PhNum), "PREFIX", "!" + PhPre + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("Phototb_" + str(PhNum), "PREFIX", "!" + PhPre + "!", "PYTHON3")
                     PhPNr = str("PHOTONUM" + PhNR)
-                    arcpy.CalculateField_management("Phototb_" + str(PhNum), "PHOTONUM", "!" + PhPNr + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("Phototb_" + str(PhNum), "PHOTONUM", "!" + PhPNr + "!", "PYTHON3")
                     PhPur = str("PURPOSE" + PhNR)
-                    arcpy.CalculateField_management("Phototb_" + str(PhNum), "PURPOSE", "!" + PhPur + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("Phototb_" + str(PhNum), "PURPOSE", "!" + PhPur + "!", "PYTHON3")
                     PhPh = str("PHOTO" + PhNR)
-                    arcpy.CalculateField_management("Phototb_" + str(PhNum), "PHOTO", "!" + PhPh + "!", "PYTHON_9.3")
+                    arcpy.CalculateField_management("Phototb_" + str(PhNum), "PHOTO", "!" + PhPh + "!", "PYTHON3")
                     PhNum += 1
             arcpy.CreateFeatureclass_management("memory", "PhotoLocation_photos2", "POINT", "PhotoLocation_photos", "", "", new_spatialref)
             phfld = arcpy.ListFeatureClasses("Phototb_*")
@@ -700,7 +699,7 @@ def main():
 			sppcnt = arcpy.GetCount_management(fc + "_sppsel").getOutput(0)
             if int(sppcnt) > 0:
                 arcpy.AddField_management(fc + "_sppsel", "cvrrttx", "TEXT", "", "", 20)
-                arcpy.CalculateField_management(fc + "_sppsel", "cvrrttx", "!EST_CVR_RT!", "PYTHON_9.3")
+                arcpy.CalculateField_management(fc + "_sppsel", "cvrrttx", "!EST_CVR_RT!", "PYTHON3")
                 add_records(fc + " Species", fc + "_sppsel", ["SCNTFC_CD", "cvrrttx", "TRT_GUID"], "trttb_all", "TREATMENTSPECIES")
 			if fc == ("BiologicalTreatmentData"):
 				add_records("Biological Component", "BiologicalTreatmentData_biocomp", ["BIO_SCNTFC_CD", "TRT_GUID"], "biotb_all", "BIOLOGICALCOMPONENT")
