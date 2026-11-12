@@ -95,17 +95,14 @@ def main():
         # Copy spatial reference
         new_spatialref = arcpy.Describe(SDEgdb + "\\dbo.WeedSurveyLocation").spatialReference
 
-        # Copy features to memory
-        arcpy.env.workspace = QCgdb
-        arcpy.AddMessage("Copying features to memory...")
-        for fc in arcpy.ListFeatureClasses():
-            arcpy.CopyFeatures_management(fc, "memory/" + fc)
+		# Copy features to memory
+		arcpy.env.workspace = QCgdb
+		arcpy.AddMessage("Copying features to memory...")
+		for fc in arcpy.ListFeatureClasses():
+			arcpy.CopyFeatures_management(fc, "memory/" + fc)
 
         # Set memory as workspace
         arcpy.env.workspace = "memory"
-
-		# Create a list to hold the final feature classes that will be uploaded
-		upload_list = []
 
         # Check for Survey data
         for fc in arcpy.ListFeatureClasses("WeedSurveyData"):
